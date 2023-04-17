@@ -1,5 +1,7 @@
 # SAM-webui
-
+<img src="https://user-images.githubusercontent.com/84118285/232520114-e737f6f7-55d5-465c-b7b7-8c15059e8384.gif" width="600"/>
+<img src="https://user-images.githubusercontent.com/84118285/232520000-6606629d-f375-4fe7-b88f-b08f0eb64321.gif" width="600"/>
+<img src="https://user-images.githubusercontent.com/84118285/232520088-47c8879a-2c0f-45cf-aa1e-acd5a6a8591a.gif" width="600"/>
 
 # News
 - Release code
@@ -15,6 +17,7 @@
 - Clear
 - Save Masks
 - Zoom in / out
+- You can find shortcuts when mouse hovering on buttons!
 
 # Install
 The code requires `python>=3.8`, as well as `pytorch>=1.7` and `torchvision>=0.8`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
