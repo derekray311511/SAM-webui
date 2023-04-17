@@ -6,6 +6,12 @@
 # News
 - Release code
 
+# TODO List
+- [x] Save current masks
+- [x] Zoom in and zoom out
+- [ ] Save masks in coco format
+- [ ] Brush tool and eraser tool
+
 # Features
 
 - Preview Images
