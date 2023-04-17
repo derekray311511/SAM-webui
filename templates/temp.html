@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing App</title>
+    <style>
+        #preview {
+            max-width: 1650px;
+            max-height: 750px;
+            width: auto;
+        }
+        
+        #zoom-container {
+            ...
+        }
+
+        #zoom-image {
+            position: absolute;
+        }
+
+        .crosshair {
+            ...
+        }
+
+        .crosshair-line {
+            ...
+        }
+
+        .crosshair-horizontal {
+            ...
+        }
+
+        .crosshair-vertical {
+            ...
+        }
+
+        #thumbnail-container {
+            ...
+        }
+        .thumbnail {
+            display: inline-block;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .thumbnail-selected {
+            border: 3px solid #f1c40f;
+            box-sizing: border-box;
+        }
+
+        #thumbnail-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background-color: #333;
+        }
+
+        #thumbnail-container::-webkit-scrollbar-thumb {
+            background-color: #777;
+            border-radius: 4px;
+        }
+
+        body {
+            ...
+        }
+        .container {
+            ...
+        }
+        .buttons {
+            ...
+        }
+        .grid-container {
+           ...
+        }
+
+        button {
+            ...
+        }
+
+        button:hover {
+            ...
+        }
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="grid-container" id="folder-selection">
+        <button id="prev-image">Previous</button>
+        <button id="select-folder">Select Folder</button>
+        <button id="next-image">Next</button>
+        <input type="file" id="input-folder" webkitdirectory="" directory="" multiple="" style="display:none">
+    </div>
+    <div id="thumbnail-container"></div>
+
+    <div class="container">
+        <div class="buttons">
+            <button id="load-image">Load Image</button>
+            <button id="button1">Image view</button>
+            <button id="button2">Masks view</button>
+            <button id="button3">Clear</button>
+            <button id="button4">P Point mode</button>
+            <button id="button5">N Point mode</button>
+            <button id="button6">Box mode</button>
+            <button id="button7">Inference</button>
+            <button id="button8">Undo</button>
+            <button id="toggle-zoom">Toggle Zoom</button>
+            <!-- Add more buttons as needed -->
+        </div>
+        <input type="file" id="input-image" accept="image/*" style="display:none">
+        <div id="image-container" style="position: relative;">
+            <img id="preview" src="#" alt="your image" style="cursor: pointer;">
+        </div>
+    </div>
+    <div id="zoom-container">
+        <img id="zoom-image" src="#" alt="zoomed image">
+        <div class="crosshair">
+            <div class="crosshair-line crosshair-horizontal"></div>
+            <div class="crosshair-line crosshair-vertical"></div>
+        </div>
+    </div>
+    <canvas id="default-preview-canvas" width="1" height="1" style="display: none;"></canvas>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        
+        let selectedImage = null;
+
+        // Select folder click event
+        $("#select-folder").click(function() {
+            $("#input-folder").trigger("click");
+        });
+        $("#input-folder").change(function(e) {
+            const files = e.target.files;
+            $("#thumbnail-container").empty(); // Clear the previous thumbnails
+            imageFiles = []; // Clear the previous image files
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type.startsWith("image/")) { // Only process image files
+                    imageFiles.push(file);
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.height = 100;
+                        img.style.width = 'auto';
+                        img.classList.add("thumbnail");
+                        img.addEventListener("click", function() {
+                            selectThumbnail(img);
+                            var newEvent = new CustomEvent("thumbnailClick", { detail: { file: file } });
+                            document.getElementById("input-image").dispatchEvent(newEvent);
+                        });
+                        $("#thumbnail-container").append(img);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        // Scroll to selected thumbnail
+        function scrollToSelectedThumbnail() {
+            const thumbnailContainer = document.getElementById("thumbnail-container");
+            const selectedThumbnail = document.querySelector(".thumbnail-selected");
+            if (!selectedThumbnail) {
+                return;
+            }
+            const containerRect = thumbnailContainer.getBoundingClientRect();
+            const thumbnailRect = selectedThumbnail.getBoundingClientRect();
+
+            // Calculate the difference between the center of the container and the center of the selected thumbnail
+            const offsetDiff = (thumbnailRect.left + (thumbnailRect.width / 2)) - (containerRect.left + (containerRect.width / 2));
+
+            // Scroll by the difference to center the selected thumbnail
+            thumbnailContainer.scrollLeft += offsetDiff;
+        }
+
+        function selectThumbnail(thumbnail) {
+            ...
+        }
+
+        let imageIndex = 0;
+        let imageFiles = [];
+
+        function changeImage(delta) {
+            ...
+        }
+
+        // Disable default browser usage
+        document.getElementById('preview').ondragstart = function() { return false; };
+        window.addEventListener("keydown", function(e) {
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+        
+        function getDefaultDarkImageBase64() {
+            ...
+        }
+        function readURL(input) {
+            // Clear all markers when loading new image
+            clearAllBoxes();
+            clearAllPoints();
+            queue = new Deque(max_deque_len);
+            if (input.files && input.files[0]) {
+                selectedImage = input.files[0]; // Store the selected file
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById("preview");
+                    preview.style.width = 'auto';
+                    preview.style.height = 'auto';
+                    $('#preview').attr('src', e.target.result);
+                    // Update the zoomImage src when the preview image changes
+                    $('#zoom-image').attr('src', e.target.result);
+
+                    var img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        // Store the original width and height
+                        $('#preview').data('originalWidth', this.width);
+                        $('#preview').data('originalHeight', this.height);
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+
+                // Init server after upload image
+                var form_data = new FormData();
+                form_data.append("image", input.files[0]);
+
+                $.ajax({
+                    url: "/upload_image",
+                    type: "POST",
+                    data: form_data,
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    success: function (response) {
+                        console.log(response);
+                    },
+                });
+            }
+        }
+        $("#preview").attr("src", getDefaultDarkImageBase64());
+
+        let mode = "p_point"; // Default mode is 'point', 'point'/'box'
+
+        $("#load-image").click(function() {
+            $("#input-image").trigger("click");
+        });
+
+        // Buttons
+        ...
+
+        $("#next-image").click(function() {
+            changeImage(1);
+        });
+
+        $("#input-image").change(function() {
+            readURL(this);
+        });
+        document.getElementById("input-image").addEventListener("thumbnailClick", function(e) {
+            ...
+        }
+
+        // For zoom preview image
+        let zoomEnabled = false;
+        const zoomContainer = document.getElementById("zoom-container");
+        const zoomImage = document.getElementById("zoom-image");
+        const zoomFactor = 3; // Adjust this value to change the zoom ratio
+
+        function updateZoomImage(x, y) {
+            const preview = document.getElementById("preview");
+            // const scaleX = preview.naturalWidth / preview.clientWidth;
+            // const scaleY = preview.naturalHeight / preview.clientHeight;
+
+            const offsetX = x;
+            const offsetY = y;
+
+            const containerWidth = zoomContainer.clientWidth;
+            const containerHeight = zoomContainer.clientHeight;
+
+            zoomImage.style.width = (preview.clientWidth * zoomFactor) + "px";
+            zoomImage.style.height = (preview.clientHeight * zoomFactor) + "px";
+
+            zoomImage.style.left = (-offsetX * zoomFactor + containerWidth / 2) + "px";
+            zoomImage.style.top = (-offsetY * zoomFactor + containerHeight / 2) + "px";
+        }
+
+        $("#preview").mousemove(function (e) {
+            if (zoomEnabled) {
+                const offset = $(this).offset();
+                const mouseX = e.pageX - offset.left;
+                const mouseY = e.pageY - offset.top;
+
+                zoomContainer.style.left = (e.pageX + 10) + "px";
+                zoomContainer.style.top = (e.pageY + 10) + "px";
+
+                updateZoomImage(mouseX, mouseY);
+            }
+        });
+
+        $("#preview").on("wheel", function (e) {
+            if (zoomEnabled) {
+                const offset = $(this).offset();
+                const mouseX = e.pageX - offset.left;
+                const mouseY = e.pageY - offset.top;
+
+                updateZoomImage(mouseX, mouseY);
+            }
+        });
+
+
+        $("#preview").mouseenter(function () {
+            if (zoomEnabled) {
+                zoomImage.src = this.src;
+                zoomContainer.style.display = "block";
+            }
+        });
+
+        $("#preview").mouseleave(function () {
+            zoomContainer.style.display = "none";
+        });
+
+        $("#toggle-zoom").click(function () {
+            zoomEnabled = !zoomEnabled;
+            if (!zoomEnabled) {
+                zoomContainer.style.display = "none";
+            }
+        });
+
+        // Capture mouse click position on the image
+        ...
+
+        // Point click
+        ...
+        
+        $("#preview").click(function() {
+            if ($('#input-image')[0].files.length === 0 && $("#preview").attr("src") == "#") {
+                $("#input-image").trigger("click");
+            }
+        });
+
+        function sendMouseClickPosition(x, y) {
+            ...
+        }
+
+        // For drawing bounding boxes
+        function clearAllBoxes() {
+            boxes.forEach(box => {
+                box.remove();
+            });
+            boxes.length = 0;
+            box.style.width = "0px";
+            box.style.height = "0px";
+            box.style.left = "0px";
+            box.style.top = "0px";
+            box.style.border = "none";
+        }
+        let drawing = false;
+        let startPoint = { x: 0, y: 0 };
+        const boxes = [];
+        const box = document.createElement("div");
+
+        box.style.position = "absolute";
+        box.style.pointerEvents = "none";
+        document.getElementById("image-container").appendChild(box);
+
+        // For zoom image
+        const zoomBox = document.createElement("div");
+        zoomBox.style.position = "absolute";
+        zoomBox.style.border = "3px solid red";
+        zoomBox.style.pointerEvents = "none";
+        zoomBox.style.display = "none";
+        zoomContainer.appendChild(zoomBox);
+
+        function rgbToCSS(r, g, b) {
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        $("#preview").mousedown(function (e) {
+            if (selectedImage === null) {
+                alert("Please select an image first.");
+                return;
+            }
+            if (e.which === 1 && mode === "box") { // Left mouse button
+                drawing = true;
+                startPoint.x = e.pageX - $(this).offset().left;
+                startPoint.y = e.pageY - $(this).offset().top;
+                box.style.border = "3px solid red";
+                box.style.width = "0px";
+                box.style.height = "0px";
+                box.style.left = startPoint.x + "px";
+                box.style.top = startPoint.y + "px";
+            }
+        });
+
+        $("#preview").mousemove(function (e) {
+            if (drawing && mode === "box") {
+                ...
+            }
+        });
+
+        $("#preview").mouseup(function (e) {
+            var coor_temp;
+            if (drawing && mode === "box") {
+                ...
+            }
+            if (mode === "box") {
+                ...
+            }
+        });
+
+        function sendBoundingBoxCoordinates(coordinates) {
+            ...
+        }
+
+    </script>
+</body>
+</html>

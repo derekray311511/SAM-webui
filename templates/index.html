@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing App</title>
+    <style>
+        #preview {
+            /* max-width: 1650px;
+            max-height: 750px; */
+            width: auto;
+            cursor: crosshair;
+        }
+        
+        #zoom-container {
+            position: absolute;
+            overflow: hidden;
+            display: none;
+            width: 250px;
+            height: 250px;
+            z-index: 10;
+            pointer-events: none;
+            border: 2px solid #fff;
+        }
+
+        #zoom-image {
+            position: absolute;
+        }
+
+        #image-container {
+            width: 1600px;
+            height: 740px;
+            position: relative;
+            overflow: scroll;
+            display: flex;
+        }
+        /* For Chrome, Edge, and Safari */
+        #image-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background-color: #333;
+        }
+        #image-container::-webkit-scrollbar-thumb {
+            background-color: #777;
+            border-radius: 4px;
+        }
+        #image-container::-webkit-scrollbar-corner {
+            background-color: #333;
+        }
+
+        .crosshair {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background-color: #f1c40f;
+            pointer-events: none;
+        }
+
+        .crosshair-horizontal {
+            width: 10%;
+            height: 2px;
+            top: 50%;
+            left: 45%;
+        }
+
+        .crosshair-vertical {
+            width: 2px;
+            height: 10%;
+            left: 50%;
+            top: 45%;
+        }
+
+        #thumbnail-container {
+            display: flex;
+            flex-direction: row;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            max-width: 90%;
+            margin-bottom: 10px;
+            margin-right: 17px;
+            height: 110px;
+            min-height: 110px;
+            align-items: center;
+            white-space: nowrap;
+
+            /* Custom scrollbar styles */
+            scrollbar-width: thin;
+            scrollbar-color: #777 #333;
+        }
+        .thumbnail {
+            display: inline-block;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .thumbnail-selected {
+            border: 3px solid #f1c40f;
+            box-sizing: border-box;
+        }
+
+        #thumbnail-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+            background-color: #333;
+        }
+
+        #thumbnail-container::-webkit-scrollbar-thumb {
+            background-color: #777;
+            border-radius: 4px;
+        }
+
+        body {
+            background-color: #333;
+            color: #fff;
+            display: flex;
+            justify-content: left;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-right: 20px;
+        }
+        .buttons-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-left: 2px;
+            padding-right: 2px;
+            border: 1px solid #857f7f;
+            border-radius: 8px;
+        }
+        .selected-view {
+            background-color: #444;
+            border: 1px solid #fff;
+        }
+        .top-grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            height: 50px;
+            grid-gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+            /* border: 1px solid #fff; */
+        }
+        .grid-container {
+            display: flex;
+            grid-template-columns: repeat(3, 150px);
+            height: 50px;
+            grid-gap: 10px;
+            margin-bottom: 10px;
+            margin-top: 10px;
+            margin-right: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        .save-path-container {
+            display: flex;
+            align-items: center;
+        }
+        .wait-cursor {
+            cursor: wait !important;
+        }
+
+        button {
+            background-color: #555;
+            border: none;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            width: 150px;
+            padding: 12px 24px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition-duration: 0.4s;
+        }
+
+        button:hover {
+            background-color: #777;
+            color: white;
+            padding: 16px 24px;
+            border: 1px solid #fff;
+        }
+
+        .processing {
+            cursor: wait;
+        }
+
+        button.processing {
+            background-color: #444;
+            cursor: not-allowed;
+        }
+
+        input[type="text"] {
+            background-color: #555;
+            border: none;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            width: 250px;
+            padding: 12px 24px;
+            margin: 4px 2px;
+            border-radius: 8px;
+            transition-duration: 0.4s;
+        }
+
+        input[type="text"]:focus {
+            background-color: #777;
+            color: white;
+            padding: 16px 24px;
+            border: 1px solid #fff;
+            outline: none;
+        }
+        
+        .notification {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+
+        .notification.hide {
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="top-grid-container">
+        <div class="save-path-container">
+            <input type="text" id="save-path" value="{{ default_save_path }}">
+            <button id="set-save-path">Set Save Path</button>
+        </div>
+        <div class="grid-container" id="folder-selection">
+            <button id="prev-image">Previous</button>
+            <button id="select-folder">Select Folder</button>
+            <button id="next-image">Next</button>
+            <input type="file" id="input-folder" webkitdirectory="" directory="" multiple="" style="display:none">
+        </div>
+        <span id="image-name" style="display: flex;"></span>
+    </div>
+    <div id="thumbnail-container"></div>
+
+    <div class="container">
+        <div class="buttons">
+            <div class="buttons-group">
+                <button id="load-image" title="shortcut (ctrl+l)">Load Image</button>
+                <button id="save-masks" title="shortcut (ctrl+s)">Save Image</button>
+            </div>
+            <div class="buttons-group">
+                <button id="image" class="button  selected-view" title="shortcut (1)">Image view</button>
+                <button id="maskImage" title="shortcut (2)">Masks view</button>
+                <button id="colorMasks" title="shortcut (3)">Color Masks</button>
+            </div>
+            <div class="buttons-group">
+                <button id="button4" class="button  selected-view" title="shortcut (4)(p)">P Point mode</button>
+                <button id="button5" title="shortcut (5)(p)">N Point mode</button>
+                <button id="button6" title="shortcut (6)(b)">Box mode</button>
+            </div>
+            <div class="buttons-group">
+                <button id="inference" title="shortcut (r)">Inference</button>
+                <button id="undo" title="shortcut (ctrl+z)">Undo</button>
+                <button id="clear" title="shortcut (c)">Clear</button>
+            </div>
+            <div class="buttons-group">
+                <button id="toggle-zoom" title="shortcut (z)">Toggle Zoom</button>
+            </div>
+            <!-- Add more buttons as needed -->
+        </div>
+        <input type="file" id="input-image" accept="image/*" style="display:none">
+        <div id="image-container" style="position: relative;">
+            <img id="preview" src="#" alt="your image">
+        </div>
+    </div>
+    <div id="zoom-container">
+        <img id="zoom-image" src="#" alt="zoomed image">
+        <div class="crosshair">
+            <div class="crosshair-line crosshair-horizontal"></div>
+            <div class="crosshair-line crosshair-vertical"></div>
+        </div>
+    </div>
+    <div id="save-notification" class="notification">Image saved successfully!</div>
+
+    <canvas id="default-preview-canvas" width="1600px" height="740px" style="display: none;"></canvas>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        
+        let selectedImage = null;
+
+        // Select folder click event
+        $("#select-folder").click(function() {
+            $("#input-folder").trigger("click");
+        });
+        $("#input-folder").change(async function(e) {
+            toggleProcessingButtons(true);
+            $("body").addClass("wait-cursor");
+            const files = e.target.files;
+            $("#thumbnail-container").empty(); // Clear the previous thumbnails
+            imageFiles = []; // Clear the previous image files
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type.startsWith("image/")) { // Only process image files
+                    imageFiles.push(file);
+                }
+            }
+
+            // Natural sort function
+            function naturalCompare(a, b) {
+                const re = /(\d+)/g;
+                const aParts = a.name.split(re);
+                const bParts = b.name.split(re);
+
+                for (let i = 0; i < aParts.length && i < bParts.length; i++) {
+                    const x = aParts[i];
+                    const y = bParts[i];
+
+                    if (x === y) continue;
+
+                    const xIsNumber = !isNaN(parseInt(x, 10));
+                    const yIsNumber = !isNaN(parseInt(y, 10));
+
+                    if (xIsNumber && yIsNumber) {
+                        const numCmp = parseInt(x, 10) - parseInt(y, 10);
+                        if (numCmp !== 0) return numCmp;
+                    } else {
+                        const strCmp = x.localeCompare(y);
+                        if (strCmp !== 0) return strCmp;
+                    }
+                }
+
+                return aParts.length - bParts.length;
+            }
+
+            // Sort imageFiles array using naturalCompare function
+            imageFiles.sort(naturalCompare);
+
+            // Create an array of Promises for each image file
+            const imagePromises = imageFiles.map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.height = 100;
+                        img.style.width = 'auto';
+                        img.classList.add("thumbnail");
+                        img.addEventListener("click", function() {
+                            selectThumbnail(img);
+                            var newEvent = new CustomEvent("thumbnailClick", { detail: { file: file } });
+                            document.getElementById("input-image").dispatchEvent(newEvent);
+                        });
+                        resolve(img);
+                    };
+                    reader.onerror = function(e) {
+                        reject(e);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            // Wait for all Promises to resolve and append the images to the thumbnail container
+            try {
+                const images = await Promise.all(imagePromises);
+                images.forEach(img => $("#thumbnail-container").append(img));
+            } catch (error) {
+                console.error("Error loading images:", error);
+            }
+            toggleProcessingButtons(false);
+            $("body").removeClass("wait-cursor");
+        });
+
+
+        // Scroll to selected thumbnail
+        function scrollToSelectedThumbnail() {
+            const thumbnailContainer = document.getElementById("thumbnail-container");
+            const selectedThumbnail = document.querySelector(".thumbnail-selected");
+            if (!selectedThumbnail) {
+                return;
+            }
+            const containerRect = thumbnailContainer.getBoundingClientRect();
+            const thumbnailRect = selectedThumbnail.getBoundingClientRect();
+
+            // Calculate the difference between the center of the container and the center of the selected thumbnail
+            const offsetDiff = (thumbnailRect.left + (thumbnailRect.width / 2)) - (containerRect.left + (containerRect.width / 2));
+
+            // Scroll by the difference to center the selected thumbnail
+            thumbnailContainer.scrollLeft += offsetDiff;
+        }
+
+        function selectThumbnail(thumbnail) {
+            const previousSelected = document.querySelector(".thumbnail-selected");
+            if (previousSelected) {
+                previousSelected.classList.remove("thumbnail-selected");
+            }
+            thumbnail.classList.add("thumbnail-selected");
+            scrollToSelectedThumbnail();
+
+            // Update imageIndex based on the selected thumbnail
+            const thumbnails = document.querySelectorAll(".thumbnail");
+            for (let i = 0; i < thumbnails.length; i++) {
+                if (thumbnails[i] === thumbnail) {
+                    imageIndex = i;
+                    break;
+                }
+            }
+        }
+
+        let imageIndex = 0;
+        let imageFiles = [];
+
+        function changeImage(delta) {
+            if (imageFiles.length === 0) {
+                alert("Please select an image folder first.");
+                return;
+            }
+
+            imageIndex += delta;
+            if (imageIndex < 0) {
+                imageIndex = imageFiles.length - 1;
+            } else if (imageIndex >= imageFiles.length) {
+                imageIndex = 0;
+            }
+
+            const thumbnails = document.querySelectorAll(".thumbnail");
+            thumbnails[imageIndex].click(); // Trigger click event on the desired thumbnail
+        }
+
+        // Disable default browser usage
+        document.getElementById('preview').ondragstart = function() { return false; };
+        window.addEventListener("keydown", function(e) {
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+        
+        function getDefaultDarkImageBase64() {
+            var canvas = document.getElementById('default-preview-canvas');
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png');
+        }
+        function readURL(input) {
+            // Clear all markers when loading new image
+            clearAllBoxes();
+            clearAllPoints();
+            queue = new Deque(max_deque_len);
+            trackDataNum = new Deque(max_deque_len);
+            if (input.files && input.files[0]) {
+                selectedImage = input.files[0]; // Store the selected file
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    const preview = document.getElementById("preview");
+                    const imgContainer = document.getElementById("image-container");
+                    $('#preview').attr('src', e.target.result);
+                    // Update the zoomImage src when the preview image changes
+                    $('#zoom-image').attr('src', e.target.result);
+
+                    var img = new Image();
+                    img.src = e.target.result;
+                    img.onload = function() {
+                        // Store the original width and height
+                        $('#preview').data('originalWidth', this.width);
+                        $('#preview').data('originalHeight', this.height);
+
+                        // Call resizeImageContainer when the image is loaded
+                        resizeImageContainer(this.width, this.height);
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+
+                // Init server after upload image
+                var form_data = new FormData();
+                form_data.append("image", input.files[0]);
+
+                $.ajax({
+                    url: "/upload_image",
+                    type: "POST",
+                    data: form_data,
+                    contentType: false,
+                    cache: false,
+                    processData: false,
+                    success: function (response) {
+                        console.log(response);
+                    },
+                });
+            }
+        }
+        $("#preview").attr("src", getDefaultDarkImageBase64());
+
+        function resizeImageContainer(originalWidth, originalHeight) {
+            const preview = document.getElementById("preview");
+            const imgContainer = document.getElementById("image-container");
+
+            // Calculate the new width and height while maintaining the aspect ratio
+            const aspectRatio = originalWidth / originalHeight;
+            const maxHeight = window.innerHeight * 0.8;
+            const maxWidth = window.innerWidth * 0.8;
+            let newHeight = maxHeight;
+            let newWidth = newHeight * aspectRatio;
+
+            if (newWidth > maxWidth) {
+                newWidth = maxWidth;
+                newHeight = newWidth / aspectRatio;
+            }
+
+            // Set the new width and height for the preview image
+            preview.style.width = newWidth - 8 + 'px';
+            preview.style.height = newHeight - 8 + 'px';
+            imgContainer.style.width = newWidth + 'px';
+            imgContainer.style.height = newHeight + 'px';
+        }
+        // Call the function whenever the window is resized
+        window.addEventListener('resize', () => {
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            if (originalWidth && originalHeight) {
+                resizeImageContainer(originalWidth, originalHeight);
+            }
+        });
+
+        class Deque {
+            constructor(maxlen) {
+                this.items = [];
+                this.maxlen = maxlen;
+            }
+            push_left(item) {
+                if (this.items.length < this.maxlen) {
+                    this.items.unshift(item);
+                }
+                else {
+                    this.pop();
+                    this.items.unshift(item);
+                }
+            }
+            push(item) {
+                if (this.items.length < this.maxlen) {
+                    this.items.push(item);
+                }
+                else {
+                    this.pop_left();
+                    this.items.push(item);
+                }
+            }
+            pop_left() {
+                if (this.isEmpty()) {
+                    return null;
+                }
+                return this.items.shift();
+            }
+            pop() {
+                if (this.isEmpty()) {
+                    return null;
+                }
+                return this.items.pop();
+            }
+            isEmpty() {
+                return this.items.length === 0;
+            }
+            size() {
+                return this.items.length;
+            }
+        }
+
+        const max_deque_len = 1000;
+        let mode = "p_point"; // Default mode is 'point', 'point'/'box'
+        let queue = new Deque(max_deque_len); // Undo / do list
+        let trackDataNum = new Deque(max_deque_len);
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        $("#load-image").click(function() {
+            $("#input-image").trigger("click");
+        });
+
+        // Buttons
+        $("#image").click(function() {
+            processButtonClick(1);
+            toggleSelectedViewButton("image");
+            togglePointsAndBoxesVisibility(true);
+        });
+        $("#maskImage").click(function() {
+            processButtonClick(2);
+            toggleSelectedViewButton("maskImage");
+            togglePointsAndBoxesVisibility(false);
+        });
+        $("#colorMasks").click(function() {
+            processButtonClick(9);
+            toggleSelectedViewButton("colorMasks");
+            togglePointsAndBoxesVisibility(false);
+        });
+        $("#clear").click(function() {
+            processButtonClick(3);
+            clearAllBoxes();
+            clearAllPoints();
+            queue = new Deque(max_deque_len);
+            trackDataNum = new Deque(max_deque_len);
+        });
+        $("#button4").click(function() {
+            processButtonClick(4);
+            toggleSelectedModeButton("button4");
+            mode = "p_point";
+
+        });
+        $("#button5").click(function() {
+            processButtonClick(5);
+            toggleSelectedModeButton("button5");
+            mode = "n_point";
+        });
+        $("#button6").click(function() {
+            processButtonClick(6);
+            toggleSelectedModeButton("button6");
+            mode = "box";
+        });
+        $("#inference").click(async function() {
+            // Disable buttons and mouse event when processing
+            toggleProcessingButtons(true);
+            $("#preview").css("pointer-events", "wait");
+            $("#preview").css("cursor", "wait");
+            
+            await processButtonClick(7);
+            togglePointsAndBoxesVisibility(false);
+            console.log(trackDataNum.size());
+            if (trackDataNum.size() > 0) {
+                var PrevDataNum = trackDataNum.pop();
+            }
+            else {
+                var PrevDataNum = {"p": 0, "b": 0};
+            }
+            var thisTimeInputNum = {
+                "p": points.length - PrevDataNum["p"],
+                "b": boxes.length - PrevDataNum["b"]
+            };
+            var currDataNum = {
+                "p": points.length, 
+                "b": boxes.length
+            };
+            trackDataNum.push(currDataNum);
+            console.log("This time inference: ", thisTimeInputNum["p"], thisTimeInputNum["b"]);
+            var info = "inference-" + thisTimeInputNum["p"] + "-" + thisTimeInputNum["b"];
+            queue.push(info);
+
+            // Enable buttons and mouse events after processing
+            toggleProcessingButtons(false);
+            clear_original_display_style();
+            $("#preview").css("pointer-events", "auto");
+            $("#preview").css("cursor", "crosshair");
+        });
+
+        $("#prev-image").click(function() {
+            changeImage(-1);
+        });
+
+        $("#next-image").click(function() {
+            changeImage(1);
+        });
+
+        $("#input-image").change(function() {
+            document.getElementById("image-name").textContent = this.files[0].name;
+            readURL(this);
+        });
+        document.getElementById("input-image").addEventListener("thumbnailClick", function(e) {
+            selectedImage = e.detail.file; // Store the selected file
+            document.getElementById("image-name").textContent = e.detail.file.name;
+            readURL({ files: [e.detail.file] });
+        });
+        $("#save-path").keydown(function(e) {
+            e.stopPropagation();
+            // Check if the Enter key was pressed
+            if (e.keyCode === 13) {
+                // Trigger the click event for the "Set Save Path" button
+                $("#set-save-path").trigger("click");
+            }
+        });
+        $("#set-save-path").click(function() {
+            const savePath = $("#save-path").val();
+            // Send the save path to the server.
+            $.ajax({
+                url: "/set_save_path",
+                type: "POST",
+                data: {save_path: savePath},
+                success: function(response) {
+                    // Handle the server response here.
+                    console.log(response);
+                    if (response.status === "success") {
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function(error) {
+                    // Handle any errors that occurred during the request.
+                    console.error(error);
+                },
+            });
+        });
+
+        $("#save-masks").click(function() {
+            // Send the save command to the server.
+            var fileName = document.getElementById("image-name").textContent;
+            fileName = fileName.split(".")[0];
+            $.ajax({
+                url: "/save_image",
+                type: "POST",
+                data: {filename: fileName},
+                success: function (response) {
+                    console.log(response);
+                    // Show the save notification
+                    $("#save-notification").show().removeClass("hide");
+                    // Hide the save notification after 3 seconds (3000ms)
+                    setTimeout(function () {
+                        $("#save-notification").addClass("hide");
+                        setTimeout(function () {
+                            $("#save-notification").hide();
+                        }, 500);
+                    }, 3000);
+                },
+                error: function(error) {
+                    console.error(error);
+                },
+            });
+        });
+
+        $("#undo").click(function() {
+            if (queue.size() != 0) {
+                var command = queue.pop();
+                command = command.split("-");
+            }
+            else {
+                command = undefined;
+            }
+            console.log("Undo Command", command);
+            if (command === undefined) {
+                // pass
+            }
+            else if (command[0] === "point") {
+                points.pop().remove();
+            }
+            else if (command[0] === "box") {
+                boxes.pop().remove();
+            }
+            else if (command[0] === "inference") {
+                console.log("Undo inference, visiaulize " + command[1] + "-" + command[2] + " inputs");
+                stepInputPsize = parseInt(command[1]);
+                stepInputBsize = parseInt(command[2]);
+                var currDataNum = {
+                    "p": points.length - stepInputPsize, 
+                    "b": boxes.length - stepInputBsize
+                };
+                trackDataNum.push(currDataNum);
+                toggleInputsVisibilityN(stepInputPsize, stepInputBsize);
+                // read new image from processButtonClick()
+            }
+            processButtonClick(8);
+        });
+
+        function toggleInputsVisibilityN(n1, n2) {
+            if (n1 !== 0) {
+                var targets = points.slice(-n1);
+                targets.forEach(point => {
+                    point.style.display = "block";
+                });
+            }
+            if (n2 !== 0) {
+                var targets = boxes.slice(-n2);
+                targets.forEach(box => {
+                    box.style.display = "block";
+                });
+            }
+        }
+
+        // Add click event listeners for other buttons
+        async function processButtonClick(button_id) {
+            if (selectedImage === null) {
+                alert("Please select an image first.");
+                return;
+            }
+
+            if (button_id !== null) {
+                await $.ajax({
+                    url: "/button_click",
+                    type: "POST",
+                    data: JSON.stringify({ button_id: button_id }),
+                    contentType: "application/json",
+                    success: function (response) {
+                        // console.log(response);
+                        $("#preview").attr("src", "data:image/jpeg;base64," + response.image);
+                        $('#zoom-image').attr('src', "data:image/jpeg;base64," + response.image);
+                    },
+                });
+            }
+        }
+
+        // For zoom preview image
+        let zoomEnabled = false;
+        const zoomContainer = document.getElementById("zoom-container");
+        const zoomImage = document.getElementById("zoom-image");
+        const zoomFactor = 3; // Adjust this value to change the zoom ratio
+
+        function updateZoomImage(x, y) {
+            const preview = document.getElementById("preview");
+            // const scaleX = preview.naturalWidth / preview.clientWidth;
+            // const scaleY = preview.naturalHeight / preview.clientHeight;
+
+            const offsetX = x;
+            const offsetY = y;
+
+            const containerWidth = zoomContainer.clientWidth;
+            const containerHeight = zoomContainer.clientHeight;
+
+            zoomImage.style.width = (preview.clientWidth * zoomFactor) + "px";
+            zoomImage.style.height = (preview.clientHeight * zoomFactor) + "px";
+
+            zoomImage.style.left = (-offsetX * zoomFactor + containerWidth / 2) + "px";
+            zoomImage.style.top = (-offsetY * zoomFactor + containerHeight / 2) + "px";
+
+            // Update the zoom box
+            if (mode === "box" && drawing) {
+                zoomBox.style.display = "block";
+                const width = parseFloat(box.style.width);
+                const height = parseFloat(box.style.height);
+                zoomBox.style.width = (width * zoomFactor) + "px";
+                zoomBox.style.height = (height * zoomFactor) + "px";
+                zoomBox.style.left = ((parseFloat(box.style.left) - offsetX) * zoomFactor + containerWidth / 2) + "px";
+                zoomBox.style.top = ((parseFloat(box.style.top) - offsetY) * zoomFactor + containerHeight / 2) + "px";
+            } else {
+                zoomBox.style.display = "none";
+            }
+        }
+
+        $("#toggle-zoom").click(function () {
+            if (selectedImage === null) {
+                alert("Please select an image first.");
+                return;
+            }
+            zoomEnabled = !zoomEnabled;
+            toggleZoomButton(zoomEnabled);
+            if (!zoomEnabled) {
+                zoomContainer.style.display = "none";
+            } else {
+                // Trigger a mousemove event to update the zoom image
+                const event = new jQuery.Event("mousemove");
+                event.pageX = $('#preview').offset().left + lastMouseX;
+                event.pageY = $('#preview').offset().top + lastMouseY;
+                $('#preview').trigger(event);
+                $('#preview').trigger("mouseenter");
+            }
+        });
+
+        $("#preview").mousemove(function (e) {
+            const offset = $(this).offset();
+            lastMouseX = e.pageX - offset.left;
+            lastMouseY = e.pageY - offset.top;
+
+            if (zoomEnabled) {
+                zoomContainer.style.left = (e.pageX + 10) + "px";
+                zoomContainer.style.top = (e.pageY - 10 - zoomContainer.clientHeight) + "px";
+                updateZoomImage(lastMouseX, lastMouseY);
+            }
+        });
+
+        $("#preview").on("wheel", function (e) {
+            if (zoomEnabled) {
+                const offset = $(this).offset();
+                const mouseX = e.pageX - offset.left;
+                const mouseY = e.pageY - offset.top;
+
+                updateZoomImage(mouseX, mouseY);
+            }
+        });
+
+
+        $("#preview").mouseenter(function () {
+            if (zoomEnabled) {
+                zoomImage.src = this.src;
+                zoomContainer.style.display = "block";
+
+                // Set the initial position of the zoomContainer to be on the top-right side of the mouse
+                const offset = $(this).offset();
+                const mouseX = lastMouseX + offset.left;
+                const mouseY = lastMouseY + offset.top;
+                zoomContainer.style.left = (mouseX + 10) + "px";
+                zoomContainer.style.top = (mouseY - 10 - zoomContainer.clientHeight) + "px";
+            }
+        });
+
+
+        $("#preview").mouseleave(function () {
+            zoomContainer.style.display = "none";
+            zoomBox.style.display = "none";
+        });
+
+        // Capture mouse click position on the image
+        const points = [];
+
+        function drawPoint(x, y, color) {
+            var img = $("#preview")[0];
+            var scaleX = img.naturalWidth / img.clientWidth;
+            var scaleY = img.naturalHeight / img.clientHeight;
+            var originalX = x * scaleX;
+            var originalY = y * scaleY;
+            const point = document.createElement("div");
+            point.classList.add("point");
+            point.style.position = "absolute";
+            point.style.width = "8px";
+            point.style.height = "8px";
+            point.style.backgroundColor = color;
+            point.style.borderRadius = "50%";
+            point.style.left = x - 4 + "px"; // Offset by half the point size for centering
+            point.style.top = y - 4 + "px";
+            document.getElementById("image-container").appendChild(point);
+            // Store the original position
+            point.dataset.originalX = originalX;
+            point.dataset.originalY = originalY;
+            points.push(point);
+            // push to queue (for undo)
+            queue.push("point");
+        }
+
+        function clearAllPoints() {
+            points.forEach(point => {
+                point.remove();
+            });
+            points.length = 0;
+        }
+
+        // Point click
+        $("#preview").click(function(e) {
+            if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
+                return;
+            }
+            if (selectedImage === null) {
+                alert("Please select an image first.");
+                return;
+            }
+            if (mode === "p_point" || mode === "n_point") {
+                var imageOffset = $(this).offset();
+                var mouseX = e.pageX - imageOffset.left;
+                var mouseY = e.pageY - imageOffset.top;
+                if (mode === "p_point") {var color = "red";}
+                else if (mode === "n_point") {var color = "blue";}
+                drawPoint(mouseX, mouseY, color);
+                console.log("Mouse clicked at: ", mouseX, mouseY);
+                sendMouseClickPosition(mouseX, mouseY);
+            }
+        });
+        
+        $("#preview").click(function() {
+            if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
+                return;
+            }
+            if ($('#input-image')[0].files.length === 0 && $("#preview").attr("src") == "#") {
+                $("#input-image").trigger("click");
+            }
+        });
+
+        function sendMouseClickPosition(x, y) {
+            var img = $("#preview")[0];
+            var scaleX = img.naturalWidth / img.clientWidth;
+            var scaleY = img.naturalHeight / img.clientHeight;
+            var originalX = x * scaleX;
+            var originalY = y * scaleY;
+
+            $.ajax({
+                url: '/point_click',
+                type: 'POST',
+                data: JSON.stringify({ x: originalX, y: originalY }),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log(response);
+                }
+            });
+        }
+
+        // For drawing bounding boxes
+        function clearAllBoxes() {
+            boxes.forEach(box => {
+                box.remove();
+            });
+            boxes.length = 0;
+            box.style.width = "0px";
+            box.style.height = "0px";
+            box.style.left = "0px";
+            box.style.top = "0px";
+            box.style.border = "none";
+        }
+        let drawing = false;
+        let startPoint = { x: 0, y: 0 };
+        const boxes = [];
+        const box = document.createElement("div");
+
+        box.style.position = "absolute";
+        box.style.pointerEvents = "none";
+        document.getElementById("image-container").appendChild(box);
+
+        // For zoom image
+        const zoomBox = document.createElement("div");
+        zoomBox.style.position = "absolute";
+        zoomBox.style.border = "3px solid red";
+        zoomBox.style.pointerEvents = "none";
+        zoomBox.style.display = "none";
+        document.getElementById("zoom-container").appendChild(zoomBox);
+
+        function rgbToCSS(r, g, b) {
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        $("#preview").mousedown(function (e) {
+            if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
+                return;
+            }
+            if (selectedImage === null) {
+                alert("Please select an image first.");
+                return;
+            }
+            if (e.which === 1 && mode === "box") { // Left mouse button
+                drawing = true;
+                startPoint.x = e.pageX - $(this).offset().left;
+                startPoint.y = e.pageY - $(this).offset().top;
+                box.style.border = "3px solid red";
+                box.style.width = "0px";
+                box.style.height = "0px";
+                box.style.left = startPoint.x + "px";
+                box.style.top = startPoint.y + "px";
+            }
+        });
+
+        $("#preview").mousemove(function (e) {
+            if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
+                return;
+            }
+            if (drawing && mode === "box") {
+                const currentX = e.pageX - $(this).offset().left;
+                const currentY = e.pageY - $(this).offset().top;
+                const width = currentX - startPoint.x;
+                const height = currentY - startPoint.y;
+                box.style.width = Math.abs(width) + "px";
+                box.style.height = Math.abs(height) + "px";
+                box.style.left = (width < 0 ? currentX : startPoint.x) + "px";
+                box.style.top = (height < 0 ? currentY : startPoint.y) + "px";
+            }
+        });
+
+        $("#preview").mouseup(function (e) {
+            if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
+                return;
+            }
+            var coor_temp;
+            if (drawing && mode === "box") {
+                drawing = false;
+                const endX = e.pageX - $(this).offset().left;
+                const endY = e.pageY - $(this).offset().top;
+                const coordinates = {
+                    x1: Math.min(startPoint.x, endX),
+                    y1: Math.min(startPoint.y, endY),
+                    x2: Math.max(startPoint.x, endX),
+                    y2: Math.max(startPoint.y, endY)
+                };
+                var img = $("#preview")[0];
+                var scaleX = img.naturalWidth / img.clientWidth;
+                var scaleY = img.naturalHeight / img.clientHeight;
+                coor_temp = coordinates;
+                sendBoundingBoxCoordinates(coordinates);
+            }
+            if (mode === "box") {
+                // Create a new box
+                const newBox = document.createElement("div");
+                newBox.classList.add("box");
+                newBox.style.position = "absolute";
+                newBox.style.border = `3px solid ${rgbToCSS(22, 154, 224)}`;
+                newBox.style.pointerEvents = "none";
+                newBox.style.width = box.style.width;
+                newBox.style.height = box.style.height;
+                newBox.style.left = box.style.left;
+                newBox.style.top = box.style.top;
+                document.getElementById("image-container").appendChild(newBox);
+                // Store the original positions and sizes
+                newBox.dataset.originalX1 = parseFloat(coor_temp.x1 * scaleX);
+                newBox.dataset.originalY1 = parseFloat(coor_temp.y1 * scaleY);
+                newBox.dataset.originalX2 = parseFloat(coor_temp.x2 * scaleX);
+                newBox.dataset.originalY2 = parseFloat(coor_temp.y2 * scaleY);
+                // Set box to invisible
+                box.style.border = "none";
+                boxes.push(newBox);
+                // Hide zoomBox after drawing the bounding box
+                zoomBox.style.display = "none";
+                // push to queue (for undo)
+                queue.push("box");
+            }
+        });
+
+        function sendBoundingBoxCoordinates(coordinates) {
+            console.log(coordinates);
+            // Send the coordinates to the server
+            var img = $("#preview")[0];
+            var scaleX = img.naturalWidth / img.clientWidth;
+            var scaleY = img.naturalHeight / img.clientHeight;
+            $.ajax({
+                url: '/box_receive',
+                type: 'POST',
+                data: JSON.stringify({ 
+                    x1: coordinates.x1 * scaleX, y1: coordinates.y1 * scaleY, 
+                    x2: coordinates.x2 * scaleX, y2: coordinates.y2 * scaleY, 
+                }),
+                contentType: 'application/json',
+                success: function(response) {
+                    console.log(response);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
