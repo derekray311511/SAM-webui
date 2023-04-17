@@ -1,7 +1,8 @@
 # SAM-webui
 
-# News
 
+# News
+- Release code
 
 # Features
 
@@ -24,7 +25,7 @@ We have tested:
 `torchvision 0.15.0`
 
 ```bash
-https://github.com/derekray311511/SAM-webui.git
+git clone https://github.com/derekray311511/SAM-webui.git
 cd SAM-webui; pip install -e .
 ```
 ```bash!
