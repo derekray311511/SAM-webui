@@ -111,6 +111,7 @@ class SAM_Web_App:
         self.app.route('/box_receive', methods=['POST'])(self.box_receive)
         self.app.route('/set_save_path', methods=['POST'])(self.set_save_path)
         self.app.route('/save_image', methods=['POST'])(self.save_image)
+        self.app.route('/send_stroke_data', methods=['POST'])(self.handle_stroke_data)
 
     def home(self):
         return render_template('index.html', default_save_path=self.save_path)
@@ -207,6 +208,18 @@ class SAM_Web_App:
 
         # Process and return the image
         return f"Click at image pos {x}, {y}"
+    
+    def handle_stroke_data(self):
+        data = request.get_json()
+        stroke_data = data['stroke_data']
+
+        print("Received stroke data:")
+        # print(stroke_data)
+
+        # Process the stroke data here
+        # ...
+
+        return jsonify({"status": "success"})
     
     def box_receive(self):
         if self.processed_img is None:

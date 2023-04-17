@@ -171,6 +171,32 @@ function handleMouseWheel(e) {
     // Update the preview size
     preview.style.width = `${newWidth - 4}px`;
     preview.style.height = `${newHeight - 4}px`;
+    
+    // Calculate the previous scale factors
+    const prevScaleX = imageCanvas.width / preview.naturalWidth;
+    const prevScaleY = imageCanvas.height / preview.naturalHeight;
+    
+    // Calculate the new scale factors
+    const newScaleX = newWidth / preview.naturalWidth;
+    const newScaleY = newHeight / preview.naturalHeight;
+
+    // Create a temporary canvas to store the current content
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = imageCanvas.width;
+    tempCanvas.height = imageCanvas.height;
+    tempCtx.drawImage(imageCanvas, 0, 0);
+
+    // Resize the canvas and draw the content from the temporary canvas
+    imageCanvas.width = newWidth;
+    imageCanvas.height = newHeight;
+    imageCtx.save();
+    imageCtx.scale(newScaleX / prevScaleX, newScaleY / prevScaleY);
+    imageCtx.drawImage(tempCanvas, 0, 0);
+    imageCtx.restore();
+
+    // Update the line width based on the new scale factor
+    imageCtx.lineWidth = baseLineWidth;
 
     // Calculate the mouse position relative to the container
     const rect = container.getBoundingClientRect();
@@ -339,7 +365,7 @@ function toggleSelectedViewButton(buttonId) {
 
 function toggleSelectedModeButton(buttonId) {
     // Remove the 'selected-Mode' class from all Mode buttons
-    $("#button4, #button5, #button6").removeClass("selected-view");
+    $("#button4, #button5, #button6, #toggle-brush").removeClass("selected-view");
     // Add the 'selected-Mode' class to the clicked Mode button
     $(`#${buttonId}`).addClass("selected-view");
 }
