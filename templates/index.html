@@ -32,6 +32,7 @@
             top: 0;
             left: 0;
             pointer-events: none;
+            border: 2px solid #4CAF50;
         }
 
         #image-container {
@@ -294,6 +295,7 @@
                 <button id="button5" title="shortcut (5)(p)">N Point mode</button>
                 <button id="button6" title="shortcut (6)(b)">Box mode</button>
                 <button id="brush">Brush</button>
+                <input type="range" id="brush-size-slider" min="1" max="50" value="5" />
             </div>
             <div class="buttons-group">
                 <button id="inference" title="shortcut (r)">Inference</button>
@@ -1005,7 +1007,7 @@
             }
         });
         
-        $("#preview").click(function() {
+        $("#preview").click(function(e) {
             if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
                 return;
             }

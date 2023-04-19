@@ -159,9 +159,10 @@ function handleMouseWheel(e) {
     let newWidth = preview.clientWidth + (e.deltaY < 0 ? 2 : -1) * scaleFactor * preview.clientWidth;
     let newHeight = preview.clientHeight + (e.deltaY < 0 ? 2 : -1) * scaleFactor * preview.clientHeight;
 
-    if (newWidth < container.clientWidth || newHeight < container.clientHeight) {
-        newWidth = container.clientWidth;
-        newHeight = container.clientHeight;
+    const shift = 12;
+    if (newWidth < container.clientWidth - shift || newHeight < container.clientHeight - shift) {
+        newWidth = container.clientWidth - shift;
+        newHeight = container.clientHeight - shift;
     }
 
     // Maintain the aspect ratio
@@ -169,34 +170,43 @@ function handleMouseWheel(e) {
     newHeight = newWidth / aspectRatio;
 
     // Update the preview size
-    preview.style.width = `${newWidth - 4}px`;
-    preview.style.height = `${newHeight - 4}px`;
+    preview.style.width = `${newWidth}px`;
+    preview.style.height = `${newHeight}px`;
     
-    // Calculate the previous scale factors
-    const prevScaleX = imageCanvas.width / preview.naturalWidth;
-    const prevScaleY = imageCanvas.height / preview.naturalHeight;
-    
-    // Calculate the new scale factors
-    const newScaleX = newWidth / preview.naturalWidth;
-    const newScaleY = newHeight / preview.naturalHeight;
+    if (isBrushEnabled) {
+        // Calculate the previous scale factors
+        const prevScaleX = imageCanvas.width / preview.naturalWidth;
+        const prevScaleY = imageCanvas.height / preview.naturalHeight;
+        
+        // Calculate the new scale factors
+        const newScaleX = newWidth / preview.naturalWidth;
+        const newScaleY = newHeight / preview.naturalHeight;
 
-    // Create a temporary canvas to store the current content
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCanvas.width = imageCanvas.width;
-    tempCanvas.height = imageCanvas.height;
-    tempCtx.drawImage(imageCanvas, 0, 0);
+        // Create a temporary canvas to store the current content
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = imageCanvas.width;
+        tempCanvas.height = imageCanvas.height;
+        tempCtx.drawImage(imageCanvas, 0, 0);
 
-    // Resize the canvas and draw the content from the temporary canvas
-    imageCanvas.width = newWidth;
-    imageCanvas.height = newHeight;
-    imageCtx.save();
-    imageCtx.scale(newScaleX / prevScaleX, newScaleY / prevScaleY);
-    imageCtx.drawImage(tempCanvas, 0, 0);
-    imageCtx.restore();
+        // Resize the canvas and draw the content from the temporary canvas
+        imageCanvas.width = newWidth;
+        imageCanvas.height = newHeight;
+        imageCtx.save();
+        imageCtx.scale(newScaleX / prevScaleX, newScaleX / prevScaleX);
+        imageCtx.drawImage(tempCanvas, 0, 0);
+        imageCtx.restore();
 
-    // Update the line width based on the new scale factor
-    imageCtx.lineWidth = baseLineWidth;
+        // Update the line width based on the new scale factor
+        imageCtx.strokeStyle = 'red'; // Change this to the color you want for the brush
+        imageCtx.lineWidth = brushSizeSlider.value; // Change this to the brush width you want
+        imageCtx.lineJoin = 'round';
+        imageCtx.lineCap = 'round';
+    }
+    else {
+        imageCanvas.width = newWidth;
+        imageCanvas.height = newHeight;
+    }
 
     // Calculate the mouse position relative to the container
     const rect = container.getBoundingClientRect();
@@ -365,7 +375,7 @@ function toggleSelectedViewButton(buttonId) {
 
 function toggleSelectedModeButton(buttonId) {
     // Remove the 'selected-Mode' class from all Mode buttons
-    $("#button4, #button5, #button6, #toggle-brush").removeClass("selected-view");
+    $("#button4, #button5, #button6, #brush").removeClass("selected-view");
     // Add the 'selected-Mode' class to the clicked Mode button
     $(`#${buttonId}`).addClass("selected-view");
 }
