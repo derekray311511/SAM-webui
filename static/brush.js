@@ -170,6 +170,27 @@ function get_img_ratio() {
     };
 }
 
+function changeBrushSize(e) {
+    if (!isBrushEnabled) return;
+    const brushSizeSlider = document.getElementById('brush-size-slider');
+    let currentBrushSize = parseInt(brushSizeSlider.value);
+    const brushSizeStep = 5; // Change this value to control the size increment/decrement
+
+    if (e.key === '+' || e.key === '=') {
+        currentBrushSize += brushSizeStep;
+    } else if (e.key === '-' || e.key === '_') {
+        currentBrushSize -= brushSizeStep;
+    } else {
+        // If the pressed key is not + or -, ignore the event
+        return;
+    }
+    currentBrushSize = Math.max(brushSizeSlider.min, Math.min(brushSizeSlider.max, currentBrushSize));
+    brushSizeSlider.value = currentBrushSize;
+    updateBrushSize();
+    drawBrushPreviewOnce();
+}
+document.addEventListener('keydown', changeBrushSize);
+
 $("#image-canvas").on("wheel", function (e) {
     if (zoomEnabled && isBrushEnabled) {
         const offset = $(this).offset();
@@ -223,6 +244,14 @@ function drawBrushPreview(e) {
     brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
     brushPreviewCtx.beginPath();
     brushPreviewCtx.arc(mousePos.x, mousePos.y, (brushPreviewCtx.lineWidth / (2 * magic_value)), 0, 2 * Math.PI);
+    brushPreviewCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
+    brushPreviewCtx.stroke();
+}
+function drawBrushPreviewOnce() {
+    if (!isBrushEnabled) return;
+    brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
+    brushPreviewCtx.beginPath();
+    brushPreviewCtx.arc(lastMouseX, lastMouseY, (brushPreviewCtx.lineWidth / (2 * magic_value)), 0, 2 * Math.PI);
     brushPreviewCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
     brushPreviewCtx.stroke();
 }
