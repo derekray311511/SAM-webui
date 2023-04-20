@@ -198,10 +198,11 @@ function handleMouseWheel(e) {
         imageCtx.restore();
 
         // Update the line width based on the new scale factor
-        imageCtx.strokeStyle = 'red'; // Change this to the color you want for the brush
+        imageCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
         imageCtx.lineWidth = brushSizeSlider.value; // Change this to the brush width you want
         imageCtx.lineJoin = 'round';
         imageCtx.lineCap = 'round';
+        updateBrushPreviewCanvasSize();
     }
     else {
         imageCanvas.width = newWidth;

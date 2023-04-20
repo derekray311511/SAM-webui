@@ -1,12 +1,17 @@
 // Add this to the beginning of your script
 const imageCanvas = document.getElementById('image-canvas');
 const imageCtx = imageCanvas.getContext('2d');
+const brushPreviewCanvas = document.getElementById('brush-preview-canvas');
+const brushPreviewCtx = brushPreviewCanvas.getContext('2d');
 const brushSizeSlider = document.getElementById('brush-size-slider');
+
 const maxUndoStackSize = 100; // Set the maximum number of elements for the undo stack
 const undoStack = [];
 let AllStrokes = [];
 let currStrokeData = {};
 let currentStroke = [];
+let brushColor = {r: 255, g:0, b:0, a:0.2};
+const magic_value = 8;
 
 // Variables for the brush tool
 let isBrushEnabled = false;
@@ -16,20 +21,26 @@ let isDrawing = false;
 function enableBrush() {
     isBrushEnabled = true;
     imageCanvas.style.pointerEvents = 'auto';
-    imageCtx.strokeStyle = 'red'; // Change this to the color you want for the brush
+    imageCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
     imageCtx.lineWidth = brushSizeSlider.value; // Change this to the brush width you want
     imageCtx.lineJoin = 'round';
     imageCtx.lineCap = 'round';
+    brushPreviewCanvas.style.pointerEvents = 'none';
+    brushPreviewCanvas.style.display = 'block';
+    brushPreviewCtx.lineWidth = brushSizeSlider.value;
+    brushPreviewCtx.lineCap = 'round';
 }
 
 // Function to disable the brush tool
 function disableBrush() {
     isBrushEnabled = false;
     imageCanvas.style.pointerEvents = 'none';
+    brushPreviewCanvas.style.display = 'none';
 }
 
 function updateBrushSize() {
     imageCtx.lineWidth = brushSizeSlider.value;
+    brushPreviewCtx.lineWidth = brushSizeSlider.value;
 }
 // Add this line after the other event listeners in your script
 document.getElementById('brush-size-slider').addEventListener('input', updateBrushSize);
@@ -175,6 +186,12 @@ imageCanvas.addEventListener('mousemove', draw);
 imageCanvas.addEventListener('mouseup', stopDrawing);
 // imageCanvas.addEventListener('mouseout', stopDrawing);
 
+// Add event listeners for the brush preview
+imageCanvas.addEventListener('mousemove', drawBrushPreview);
+imageCanvas.addEventListener('mouseout', () => {
+    brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
+});
+
 // Update the canvas size after loading the image
 function updateCanvasSize() {
     // Save the current canvas content
@@ -184,9 +201,30 @@ function updateCanvasSize() {
     imageCanvas.width = $('#preview').width();
     imageCanvas.height = $('#preview').height();
     imageCtx.lineWidth = brushSizeSlider.value;
+    
+    // Update the brush preview canvas size
+    updateBrushPreviewCanvasSize();
 
     // Draw the saved content back onto the canvas
     imageCtx.putImageData(currentCanvasContent, 0, 0);
+}
+
+function updateBrushPreviewCanvasSize() {
+    brushPreviewCanvas.width = imageCanvas.width;
+    brushPreviewCanvas.height = imageCanvas.height;
+    brushPreviewCtx.lineWidth = brushSizeSlider.value;
+    brushPreviewCtx.lineCap = 'round';
+}
+
+// function to draw the brush preview
+function drawBrushPreview(e) {
+    if (!isBrushEnabled) return;
+    const mousePos = getMousePos(brushPreviewCanvas, e);
+    brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
+    brushPreviewCtx.beginPath();
+    brushPreviewCtx.arc(mousePos.x, mousePos.y, (brushPreviewCtx.lineWidth / (2 * magic_value)), 0, 2 * Math.PI);
+    brushPreviewCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
+    brushPreviewCtx.stroke();
 }
 
 // Function to undo the last drawing

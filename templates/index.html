@@ -32,7 +32,7 @@
             top: 0;
             left: 0;
             pointer-events: none;
-            border: 2px solid #4CAF50;
+            /* border: 2px solid #4CAF50; */
         }
 
         #image-container {
@@ -295,7 +295,7 @@
                 <button id="button5" title="shortcut (5)(p)">N Point mode</button>
                 <button id="button6" title="shortcut (6)(b)">Box mode</button>
                 <button id="brush">Brush</button>
-                <input type="range" id="brush-size-slider" min="1" max="50" value="5" />
+                <input type="range" id="brush-size-slider" min="5" max="200" value="30" />
             </div>
             <div class="buttons-group">
                 <button id="inference" title="shortcut (r)">Inference</button>
@@ -311,6 +311,7 @@
         <div id="image-container" style="position: relative;">
             <img id="preview" src="#" alt="your image">
             <canvas id="image-canvas"></canvas>
+            <canvas id="brush-preview-canvas" style="position:absolute; pointer-events:none;"></canvas>
         </div>
     </div>
     <div id="zoom-container">

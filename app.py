@@ -432,7 +432,7 @@ class SAM_Web_App:
             print(np.count_nonzero(union_mask), np.count_nonzero(masks[i]))
 
         if (brushMask is not None):
-            image = self.overlay_mask(image, brushMask, 0.5, random_color=(len(masks) > 1))
+            image = self.overlay_mask(image, brushMask, 0.5, random_color=False)
             union_mask = np.bitwise_or(union_mask, brushMask)
         
         # Cut out objects using union mask
