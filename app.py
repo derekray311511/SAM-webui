@@ -218,12 +218,8 @@ class SAM_Web_App:
     def handle_stroke_data(self):
         data = request.get_json()
         stroke_data = data['stroke_data']
-        ratio = data['ratio']
-        color = data['color']
-        bgrColor = (color['b'], color['g'], color['r'])
 
         print("Received stroke data")
-        print(f"Color: {color}")
 
         if len(stroke_data) == 0:
             self.brushMask = np.zeros_like(self.origin_image)[:, :, 0]
@@ -232,18 +228,21 @@ class SAM_Web_App:
             stroke_img = np.zeros_like(self.origin_image)
             stroke_datas = []
             lineWidth = []  # For each step of drawing has different size
+            colors = []
             for strokesDict in stroke_data:
                 stroke_data_cv2 = []
-                strokes, size = strokesDict['Stroke'], strokesDict['Size']
+                strokes, size, color = strokesDict['Stroke'], strokesDict['Size'], strokesDict['Color']
                 for stroke in strokes:
                     stroke_data_cv2.append((int(stroke['x']), int(stroke['y'])))
                 stroke_datas.append(stroke_data_cv2)
                 lineWidth.append(size)
+                colors.append(color)
 
             # Draw the strokes on the blank image
             for j in range(len(stroke_datas)):
                 stroke_data = stroke_datas[j]
                 size = lineWidth[j]
+                color = colors[j]
                 for i in range(len(stroke_data) - 1):
                     cv2.line(stroke_img, stroke_data[i], stroke_data[i + 1], (0, 0, 255), size)
 
@@ -493,6 +492,7 @@ class SAM_Web_App:
         if self.brushMask is not None:
             image = self.overlay_mask(image, self.brushMask, 0.5, random_color=False)
 
+        np.random.seed(0)
         if (len(masks) == 0):
             self.colorMasks = image
             return image
