@@ -79,6 +79,12 @@ function startDrawing(e) {
         // Remove the oldest canvas state from the stack
         undoStack.shift();
     }
+    if (e.altKey) {
+        brushColor = {r: 0, g:0, b:255, a:0.2};
+    } else {
+        brushColor = {r: 255, g:0, b:0, a:0.2};
+    }
+    imageCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
     // Save the current canvas state before starting a new drawing
     undoStack.push(imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height));
     const mousePos = getMousePos(imageCanvas, e);
@@ -144,6 +150,7 @@ function sendStrokeDataToServer(strokeData) {
         data: JSON.stringify({ 
             stroke_data: strokeData,
             ratio: ratio,
+            color: brushColor,
         }),
         contentType: "application/json",
         success: function (response) {
@@ -190,6 +197,19 @@ function changeBrushSize(e) {
     drawBrushPreviewOnce();
 }
 document.addEventListener('keydown', changeBrushSize);
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Alt") {
+        brushColor = {r: 0, g:0, b:255, a:0.2};
+        drawBrushPreviewOnce();
+    }
+});
+
+document.addEventListener("keyup", function (e) {
+    if (e.key === "Alt") {
+        brushColor = {r: 255, g:0, b:0, a:0.2};
+        drawBrushPreviewOnce();
+    }
+});
 
 $("#image-canvas").on("wheel", function (e) {
     if (zoomEnabled && isBrushEnabled) {
@@ -240,6 +260,12 @@ function updateBrushPreviewCanvasSize() {
 // function to draw the brush preview
 function drawBrushPreview(e) {
     if (!isBrushEnabled) return;
+    if (e.altKey) {
+        brushColor = {r: 0, g:0, b:255, a:0.2};
+    }
+    else {
+        brushColor = {r: 255, g:0, b:0, a:0.2};
+    }
     const mousePos = getMousePos(brushPreviewCanvas, e);
     brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
     brushPreviewCtx.beginPath();

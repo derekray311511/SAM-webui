@@ -971,6 +971,7 @@
             point.style.borderRadius = "50%";
             point.style.left = x - 4 + "px"; // Offset by half the point size for centering
             point.style.top = y - 4 + "px";
+            point.style.pointerEvents = "none";
             document.getElementById("image-container").appendChild(point);
             // Store the original position
             point.dataset.originalX = originalX;

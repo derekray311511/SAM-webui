@@ -219,8 +219,11 @@ class SAM_Web_App:
         data = request.get_json()
         stroke_data = data['stroke_data']
         ratio = data['ratio']
+        color = data['color']
+        bgrColor = (color['b'], color['g'], color['r'])
 
         print("Received stroke data")
+        print(f"Color: {color}")
 
         if len(stroke_data) == 0:
             self.brushMask = np.zeros_like(self.origin_image)[:, :, 0]
@@ -252,7 +255,17 @@ class SAM_Web_App:
         self.masked_img = maskedImage
         self.queue.append("brush")
 
-        _, buffer = cv2.imencode('.jpg', self.processed_img)
+        if self.curr_view == "masks":
+            print("masks")
+            processed_image = self.masked_img
+        elif self.curr_view == "colorMasks":
+            print("color")
+            processed_image = self.colorMasks
+        else:   # self.curr_view == "image":
+            print("image")
+            processed_image = self.processed_img
+
+        _, buffer = cv2.imencode('.jpg', processed_image)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
         return jsonify({'image': img_base64})
     
