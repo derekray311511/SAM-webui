@@ -289,7 +289,7 @@ function undoBrush() {
     if (AllStrokes.length > 0) {
         AllStrokes.pop();
     }
-    sendStrokeDataToServer(AllStrokes);
+    // sendStrokeDataToServer(AllStrokes);
 }
 
 function clearBrush() {
