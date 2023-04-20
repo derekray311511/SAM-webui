@@ -295,7 +295,7 @@ function undoBrush() {
 function clearBrush() {
     imageCtx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
     AllStrokes = [];
-    sendStrokeDataToServer(AllStrokes);
+    // sendStrokeDataToServer(AllStrokes);
 }
 
 // const scriptExports = {

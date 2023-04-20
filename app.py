@@ -222,9 +222,6 @@ class SAM_Web_App:
         else:
             # Process the stroke data here
             stroke_img = np.zeros_like(self.origin_image)
-            stroke_datas = []
-            lineWidth = []  # For each step of drawing has different size
-            colors = []
             print(f"stroke data len: {len(stroke_data)}")
 
             latestData = stroke_data[len(stroke_data) - 1]
@@ -255,13 +252,13 @@ class SAM_Web_App:
         self.queue.append("brush")
 
         if self.curr_view == "masks":
-            print("masks")
+            print("view masks")
             processed_image = self.masked_img
         elif self.curr_view == "colorMasks":
-            print("color")
+            print("view color")
             processed_image = self.colorMasks
         else:   # self.curr_view == "image":
-            print("image")
+            print("view image")
             processed_image = self.processed_img
 
         _, buffer = cv2.imencode('.jpg', processed_image)
@@ -365,13 +362,13 @@ class SAM_Web_App:
                     self.get_colored_masks_image()
                 
                 if self.curr_view == "masks":
-                    print("masks")
+                    print("view masks")
                     processed_image = self.masked_img
                 elif self.curr_view == "colorMasks":
-                    print("color")
+                    print("view color")
                     processed_image = self.colorMasks
                 else:   # self.curr_view == "image":
-                    print("image")
+                    print("view image")
                     processed_image = self.processed_img
 
         _, buffer = cv2.imencode('.jpg', processed_image)
