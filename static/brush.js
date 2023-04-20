@@ -4,13 +4,16 @@ const imageCtx = imageCanvas.getContext('2d');
 const brushPreviewCanvas = document.getElementById('brush-preview-canvas');
 const brushPreviewCtx = brushPreviewCanvas.getContext('2d');
 const brushSizeSlider = document.getElementById('brush-size-slider');
+brushPreviewCanvas.style.pointerEvents = 'none';
 
-const maxUndoStackSize = 100; // Set the maximum number of elements for the undo stack
+const maxUndoStackSize = 1000; // Set the maximum number of elements for the undo stack
 const undoStack = [];
 let AllStrokes = [];
 let currStrokeData = {};
 let currentStroke = [];
-let brushColor = {r: 255, g:0, b:0, a:0.2};
+const drawColor = {r: 255, g:0, b:0, a:0.2};
+const deleteColor = {r: 0, g:0, b:255, a:0.2};
+let brushColor = drawColor;
 const magic_value = 8;
 
 // Variables for the brush tool
@@ -25,7 +28,6 @@ function enableBrush() {
     imageCtx.lineWidth = brushSizeSlider.value; // Change this to the brush width you want
     imageCtx.lineJoin = 'round';
     imageCtx.lineCap = 'round';
-    brushPreviewCanvas.style.pointerEvents = 'none';
     brushPreviewCanvas.style.display = 'block';
     brushPreviewCtx.lineWidth = brushSizeSlider.value;
     brushPreviewCtx.lineCap = 'round';
@@ -80,13 +82,13 @@ function startDrawing(e) {
         undoStack.shift();
     }
     if (e.altKey) {
-        brushColor = {r: 0, g:0, b:255, a:0.2};
+        brushColor = deleteColor;
     } else {
-        brushColor = {r: 255, g:0, b:0, a:0.2};
+        brushColor = drawColor;
     }
     imageCtx.strokeStyle = `rgba(${brushColor.r}, ${brushColor.g}, ${brushColor.b}, ${brushColor.a})`;
     // Save the current canvas state before starting a new drawing
-    undoStack.push(imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height));
+    // undoStack.push(imageCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height));
     const mousePos = getMousePos(imageCanvas, e);
     const trueMousePos = getTrueMousePos(imageCanvas, e);
     currentStroke.push({ x: trueMousePos.x, y: trueMousePos.y });
@@ -125,7 +127,6 @@ function stopDrawing() {
     if (!isBrushEnabled) return;
     isDrawing = false;
     queue.push("brush");
-    console.log("q: ", queue[queue.length - 1]);
 
     // Send the current stroke to the server
     const ratio = get_img_ratio();
@@ -133,6 +134,7 @@ function stopDrawing() {
     currStrokeData = {
         Stroke: currentStroke,
         Size: size,
+        Color: brushColor
     }
     AllStrokes.push(currStrokeData);
     sendStrokeDataToServer(AllStrokes);
@@ -142,15 +144,12 @@ function stopDrawing() {
 
 // Function to send stroke data to the server
 function sendStrokeDataToServer(strokeData) {
-    const ratio = get_img_ratio();
     // Send the stroke data to the server
     $.ajax({
         url: "/send_stroke_data",
         type: "POST",
         data: JSON.stringify({ 
             stroke_data: strokeData,
-            ratio: ratio,
-            color: brushColor,
         }),
         contentType: "application/json",
         success: function (response) {
@@ -199,14 +198,15 @@ function changeBrushSize(e) {
 document.addEventListener('keydown', changeBrushSize);
 document.addEventListener("keydown", function (e) {
     if (e.key === "Alt") {
-        brushColor = {r: 0, g:0, b:255, a:0.2};
+        e.preventDefault();
+        brushColor = deleteColor;
         drawBrushPreviewOnce();
     }
 });
 
 document.addEventListener("keyup", function (e) {
     if (e.key === "Alt") {
-        brushColor = {r: 255, g:0, b:0, a:0.2};
+        brushColor = drawColor;
         drawBrushPreviewOnce();
     }
 });
@@ -261,10 +261,9 @@ function updateBrushPreviewCanvasSize() {
 function drawBrushPreview(e) {
     if (!isBrushEnabled) return;
     if (e.altKey) {
-        brushColor = {r: 0, g:0, b:255, a:0.2};
-    }
-    else {
-        brushColor = {r: 255, g:0, b:0, a:0.2};
+        brushColor = deleteColor;
+    } else {
+        brushColor = drawColor;
     }
     const mousePos = getMousePos(brushPreviewCanvas, e);
     brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
@@ -284,9 +283,9 @@ function drawBrushPreviewOnce() {
 
 // Function to undo the last drawing
 function undoBrush() {
-    if (undoStack.length === 0) return;
-    const lastState = undoStack.pop();
-    imageCtx.putImageData(lastState, 0, 0);
+    // if (undoStack.length === 0) return;
+    // const lastState = undoStack.pop();
+    // imageCtx.putImageData(lastState, 0, 0);
     if (AllStrokes.length > 0) {
         AllStrokes.pop();
     }

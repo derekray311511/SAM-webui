@@ -20,3 +20,5 @@ segment_anything/utils/__pycache__/amg.cpython-38.pyc
 segment_anything/utils/__pycache__/transforms.cpython-38.pyc
 __pycache__/arg_parse.cpython-38.pyc
 __pycache__/utils.cpython-38.pyc
+models/sam_vit_b_01ec64.pth
+models/sam_vit_l_0b3195.pth
