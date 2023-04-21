@@ -5,6 +5,8 @@ from typing import Any, Dict, List
 from arg_parse import parser
 from utils import mkdir_or_exist
 from collections import deque
+import threading
+import queue
 import cv2
 import numpy as np
 import io, os
@@ -111,6 +113,7 @@ class SAM_Web_App:
         self.app.route('/box_receive', methods=['POST'])(self.box_receive)
         self.app.route('/set_save_path', methods=['POST'])(self.set_save_path)
         self.app.route('/save_image', methods=['POST'])(self.save_image)
+        self.app.route('/send_stroke_data', methods=['POST'])(self.handle_stroke_data)
 
     def home(self):
         return render_template('index.html', default_save_path=self.save_path)
@@ -208,6 +211,60 @@ class SAM_Web_App:
         # Process and return the image
         return f"Click at image pos {x}, {y}"
     
+    def handle_stroke_data(self):
+        data = request.get_json()
+        stroke_data = data['stroke_data']
+
+        print("Received stroke data")
+
+        if len(stroke_data) == 0:
+            pass
+        else:
+            # Process the stroke data here
+            stroke_img = np.zeros_like(self.origin_image)
+            print(f"stroke data len: {len(stroke_data)}")
+
+            latestData = stroke_data[len(stroke_data) - 1]
+            strokes, size = latestData['Stroke'], latestData['Size']
+            BGRcolor = (latestData['Color']['b'], latestData['Color']['g'], latestData['Color']['r'])
+            Rpos, Bpos = 2, 0
+            stroke_data_cv2 = []
+            for stroke in strokes:
+                stroke_data_cv2.append((int(stroke['x']), int(stroke['y'])))
+            for i in range(len(strokes) - 1):
+                cv2.line(stroke_img, stroke_data_cv2[i], stroke_data_cv2[i + 1], BGRcolor, size)
+
+            if BGRcolor[0] == 255:
+                mask = np.squeeze(stroke_img[:, :, Bpos] == 0)
+                opt = "negative"
+            else: # np.where(BGRcolor == 255)[0] == Rpos
+                mask = np.squeeze(stroke_img[:, :, Rpos] > 0)
+                opt = "positive"
+
+            self.masks.append({
+                "mask": mask,
+                "opt": opt
+            })
+
+        self.get_colored_masks_image()
+        self.processed_img, maskedImage = self.updateMaskImg(self.origin_image, self.masks)
+        self.masked_img = maskedImage
+        self.queue.append("brush")
+
+        if self.curr_view == "masks":
+            print("view masks")
+            processed_image = self.masked_img
+        elif self.curr_view == "colorMasks":
+            print("view color")
+            processed_image = self.colorMasks
+        else:   # self.curr_view == "image":
+            print("view image")
+            processed_image = self.processed_img
+
+        _, buffer = cv2.imencode('.jpg', processed_image)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        return jsonify({'image': img_base64})
+    
     def box_receive(self):
         if self.processed_img is None:
             return jsonify({'error': 'No image available for processing'}), 400
@@ -260,7 +317,7 @@ class SAM_Web_App:
                 print(f"Labels shape {labels.shape}")
                 print(f"Boxes shape {boxes.shape}")
                 prev_masks_len = len(self.masks)
-                processed_image = self.inference(self.origin_image, points, labels, boxes)
+                processed_image, self.masked_img = self.inference(self.origin_image, points, labels, boxes)
                 curr_masks_len = len(self.masks)
                 self.get_colored_masks_image()
                 self.processed_img = processed_image
@@ -271,6 +328,7 @@ class SAM_Web_App:
                 })
                 self.reset_inputs()
                 self.queue.append(f"inference-{curr_masks_len - prev_masks_len}")
+
             elif (id == MODE.UNDO):
                 if len(self.queue) != 0:
                     command = self.queue.pop()
@@ -290,7 +348,7 @@ class SAM_Web_App:
                     # Calculate masks and image again
                     val = command[1]
                     self.masks = self.masks[:(len(self.masks) - int(val))]
-                    self.processed_img = self.updateMaskImg(self.masks)
+                    self.processed_img, self.masked_img = self.updateMaskImg(self.origin_image, self.masks)
                     self.get_colored_masks_image()
 
                     # Load prev inputs
@@ -298,15 +356,19 @@ class SAM_Web_App:
                     self.points = prev_inputs["points"]
                     self.points_label = prev_inputs["labels"]
                     self.boxes = prev_inputs["boxes"]
+                elif command[0] == "brush":
+                    self.masks.pop()
+                    self.processed_img, self.masked_img = self.updateMaskImg(self.origin_image, self.masks)
+                    self.get_colored_masks_image()
                 
                 if self.curr_view == "masks":
-                    print("masks")
+                    print("view masks")
                     processed_image = self.masked_img
                 elif self.curr_view == "colorMasks":
-                    print("color")
+                    print("view color")
                     processed_image = self.colorMasks
                 else:   # self.curr_view == "image":
-                    print("image")
+                    print("view image")
                     processed_image = self.processed_img
 
         _, buffer = cv2.imencode('.jpg', processed_image)
@@ -331,7 +393,10 @@ class SAM_Web_App:
         if (points_len == boxes_len == 0):
             masks = self.autoPredictor.generate(image)
             for mask in masks:
-                self.masks.append(mask)
+                self.masks.append({
+                    "mask": mask,
+                    "opt": "positive"
+                })
 
         # One Object
         elif ((boxes_len == 1) or (points_len > 0 and boxes_len <= 1)):
@@ -342,7 +407,10 @@ class SAM_Web_App:
                 multimask_output=True,
             )
             max_idx = np.argmax(scores)
-            self.masks.append(masks[max_idx])
+            self.masks.append({
+                "mask": masks[max_idx],
+                "opt": "positive"
+            })
 
         # Multiple Object
         elif (boxes_len > 1):
@@ -359,31 +427,37 @@ class SAM_Web_App:
             max_idxs = np.argmax(scores, axis=1)
             print(f"output mask shape: {masks.shape}")  # (batch_size) x (num_predicted_masks_per_input) x H x W
             for i in range(masks.shape[0]):
-                self.masks.append(masks[i][max_idxs[i]])
+                self.masks.append({
+                    "mask": masks[i][max_idxs[i]],
+                    "opt": "positive"
+                })
 
         # Update masks image to show
-        masked_image = self.updateMaskImg(self.masks)
+        overlayImage, maskedImage = self.updateMaskImg(self.origin_image, self.masks)
+        # overlayImage, maskedImage = self.updateMaskImg(overlayImage, maskedImage, [self.brushMask])
 
-        return masked_image
+        return overlayImage, maskedImage
 
-    def updateMaskImg(self, masks):
-        image = self.origin_image.copy()
+    def updateMaskImg(self, image, masks):
 
-        if (len(masks) == 0):
-            self.masked_img = np.zeros_like(image)
-            return image
+        if (len(masks) == 0 or masks[0] is None):
+            print(masks)
+            return image, np.zeros_like(image)
         
-        union_mask = np.zeros_like(masks[0])
+        union_mask = np.zeros_like(image)[:, :, 0]
         np.random.seed(0)
-        for mask in masks:
-            image = self.overlay_mask(image, mask, 0.5, random_color=(len(masks) > 1))
-            union_mask = np.bitwise_or(union_mask, mask)
+        for i in range(len(masks)):
+            if masks[i]['opt'] == "negative":
+                image = self.clearMaskWithOriginImg(self.origin_image, image, masks[i]['mask'])
+                union_mask = np.bitwise_and(union_mask, masks[i]['mask'])
+            else:
+                image = self.overlay_mask(image, masks[i]['mask'], 0.5, random_color=(len(masks) > 1))
+                union_mask = np.bitwise_or(union_mask, masks[i]['mask'])
         
         # Cut out objects using union mask
         masked_image = self.origin_image * union_mask[:, :, np.newaxis]
-        self.masked_img = masked_image
         
-        return image
+        return image, masked_image
 
     # Function to overlay a mask on an image
     def overlay_mask(
@@ -419,13 +493,26 @@ class SAM_Web_App:
     
     def get_colored_masks_image(self):
         masks = self.masks
-        image = np.zeros_like(self.origin_image)
+        darkImg = np.zeros_like(self.origin_image)
+        image = darkImg.copy()
+
+        np.random.seed(0)
         if (len(masks) == 0):
             self.colorMasks = image
             return image
         for mask in masks:
-            image = self.overlay_mask(image, mask, 0.5, random_color=(len(masks) > 1))
+            if mask['opt'] == "negative":
+                image = self.clearMaskWithOriginImg(darkImg, image, mask['mask'])
+            else:
+                image = self.overlay_mask(image, mask['mask'], 0.5, random_color=(len(masks) > 1))
+
         self.colorMasks = image
+        return image
+    
+    def clearMaskWithOriginImg(self, originImage, image, mask):
+        originImgPart = originImage * np.invert(mask)[:, :, np.newaxis]
+        image = image * mask[:, :, np.newaxis]
+        image = cv2.add(image, originImgPart)
         return image
     
     def reset_inputs(self):
@@ -439,7 +526,7 @@ class SAM_Web_App:
         self.colorMasks = np.zeros_like(self.origin_image)
 
     def run(self, debug=True):
-        self.app.run(debug=debug)
+        self.app.run(debug=debug, port=8989)
 
 
 if __name__ == '__main__':

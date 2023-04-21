@@ -27,8 +27,16 @@
             position: absolute;
         }
 
+        #image-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            /* border: 2px solid #4CAF50; */
+        }
+
         #image-container {
-            width: 1600px;
+            width: 1400px;
             height: 740px;
             position: relative;
             overflow: scroll;
@@ -286,6 +294,8 @@
                 <button id="button4" class="button  selected-view" title="shortcut (4)(p)">P Point mode</button>
                 <button id="button5" title="shortcut (5)(p)">N Point mode</button>
                 <button id="button6" title="shortcut (6)(b)">Box mode</button>
+                <button id="brush" title="shortcut (q)">Brush</button>
+                <input type="range" id="brush-size-slider" min="5" max="200" value="30" title="shortcut (+)(-)"/>
             </div>
             <div class="buttons-group">
                 <button id="inference" title="shortcut (r)">Inference</button>
@@ -300,6 +310,8 @@
         <input type="file" id="input-image" accept="image/*" style="display:none">
         <div id="image-container" style="position: relative;">
             <img id="preview" src="#" alt="your image">
+            <canvas id="image-canvas"></canvas>
+            <canvas id="brush-preview-canvas" style="position:absolute; pointer-events:none;"></canvas>
         </div>
     </div>
     <div id="zoom-container">
@@ -311,9 +323,10 @@
     </div>
     <div id="save-notification" class="notification">Image saved successfully!</div>
 
-    <canvas id="default-preview-canvas" width="1600px" height="740px" style="display: none;"></canvas>
+    <canvas id="default-preview-canvas" width="1400px" height="740px" style="display: none;"></canvas>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='brush.js') }}"></script>
     <script>
         
         let selectedImage = null;
@@ -496,6 +509,8 @@
 
                         // Call resizeImageContainer when the image is loaded
                         resizeImageContainer(this.width, this.height);
+                        updateCanvasSize();
+                        clearBrush();
                     }
                 };
                 reader.readAsDataURL(input.files[0]);
@@ -525,7 +540,7 @@
 
             // Calculate the new width and height while maintaining the aspect ratio
             const aspectRatio = originalWidth / originalHeight;
-            const maxHeight = window.innerHeight * 0.8;
+            const maxHeight = window.innerHeight * 0.8 - 10;
             const maxWidth = window.innerWidth * 0.8;
             let newHeight = maxHeight;
             let newWidth = newHeight * aspectRatio;
@@ -624,24 +639,32 @@
             processButtonClick(3);
             clearAllBoxes();
             clearAllPoints();
+            clearBrush();
             queue = new Deque(max_deque_len);
             trackDataNum = new Deque(max_deque_len);
         });
         $("#button4").click(function() {
             processButtonClick(4);
             toggleSelectedModeButton("button4");
+            disableBrush();
             mode = "p_point";
-
         });
         $("#button5").click(function() {
             processButtonClick(5);
             toggleSelectedModeButton("button5");
+            disableBrush();
             mode = "n_point";
         });
         $("#button6").click(function() {
             processButtonClick(6);
             toggleSelectedModeButton("button6");
+            disableBrush();
             mode = "box";
+        });
+        $("#brush").click(function() {
+            toggleSelectedModeButton("brush");
+            enableBrush();
+            mode = "brush";
         });
         $("#inference").click(async function() {
             // Disable buttons and mouse event when processing
@@ -782,6 +805,9 @@
                 toggleInputsVisibilityN(stepInputPsize, stepInputBsize);
                 // read new image from processButtonClick()
             }
+            else if (command[0] === "brush") {
+                undoBrush();
+            }
             processButtonClick(8);
         });
 
@@ -814,9 +840,15 @@
                     data: JSON.stringify({ button_id: button_id }),
                     contentType: "application/json",
                     success: function (response) {
-                        // console.log(response);
-                        $("#preview").attr("src", "data:image/jpeg;base64," + response.image);
-                        $('#zoom-image').attr('src', "data:image/jpeg;base64," + response.image);
+                        const image = new Image();
+                        image.src = "data:image/jpeg;base64," + response.image;
+                        image.onload = function () {
+                            const canvasWidth = $('#preview').width();
+                            const canvasHeight = $('#preview').height();
+                            $("#preview").attr("src", image.src);
+                            $('#zoom-image').attr('src', image.src);
+                        };
+
                     },
                 });
             }
@@ -939,6 +971,7 @@
             point.style.borderRadius = "50%";
             point.style.left = x - 4 + "px"; // Offset by half the point size for centering
             point.style.top = y - 4 + "px";
+            point.style.pointerEvents = "none";
             document.getElementById("image-container").appendChild(point);
             // Store the original position
             point.dataset.originalX = originalX;
@@ -976,7 +1009,7 @@
             }
         });
         
-        $("#preview").click(function() {
+        $("#preview").click(function(e) {
             if (e.ctrlKey) {    // If ctrl is pressed, prevent this event handler from executing
                 return;
             }

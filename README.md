@@ -5,12 +5,13 @@
 
 # News
 - Release code
+- Add brush and eraser tool
 
 # TODO List
 - [x] Save current masks
 - [x] Zoom in and zoom out
+- [x] Brush tool and eraser tool
 - [ ] Save masks in coco format
-- [ ] Brush tool and eraser tool
 
 # Features
 
@@ -23,6 +24,9 @@
 - Clear
 - Save Masks
 - Zoom in / out
+- Find shortcuts when mouse hovering on buttons!
+- Press ctrl to drag the zoomed image
+- Press alt to change the brush to eraser
 - You can find shortcuts when mouse hovering on buttons!
 
 # Install
