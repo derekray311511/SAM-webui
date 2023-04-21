@@ -1,7 +1,17 @@
 # SAM-webui
+<img src="https://user-images.githubusercontent.com/84118285/232520114-e737f6f7-55d5-465c-b7b7-8c15059e8384.gif" width="600"/>
+<img src="https://user-images.githubusercontent.com/84118285/232520000-6606629d-f375-4fe7-b88f-b08f0eb64321.gif" width="600"/>
+<img src="https://user-images.githubusercontent.com/84118285/232520088-47c8879a-2c0f-45cf-aa1e-acd5a6a8591a.gif" width="600"/>
 
 # News
+- Release code
+- Add brush and eraser tool
 
+# TODO List
+- [x] Save current masks
+- [x] Zoom in and zoom out
+- [x] Brush tool and eraser tool
+- [ ] Save masks in coco format
 
 # Features
 
@@ -14,6 +24,9 @@
 - Clear
 - Save Masks
 - Zoom in / out
+- Find shortcuts when mouse hovering on buttons!
+- Press ctrl to drag the zoomed image
+- Press alt to change the brush to eraser
 
 # Install
 The code requires `python>=3.8`, as well as `pytorch>=1.7` and `torchvision>=0.8`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
@@ -24,7 +37,7 @@ We have tested:
 `torchvision 0.15.0`
 
 ```bash
-https://github.com/derekray311511/SAM-webui.git
+git clone https://github.com/derekray311511/SAM-webui.git
 cd SAM-webui; pip install -e .
 ```
 ```bash!

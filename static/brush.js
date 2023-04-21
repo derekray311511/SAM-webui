@@ -202,6 +202,9 @@ document.addEventListener("keydown", function (e) {
         brushColor = deleteColor;
         drawBrushPreviewOnce();
     }
+    else if (e.key === "q") {
+        buttonClick("brush");
+    }
 });
 
 document.addEventListener("keyup", function (e) {
@@ -231,6 +234,10 @@ imageCanvas.addEventListener('mouseup', stopDrawing);
 imageCanvas.addEventListener('mousemove', drawBrushPreview);
 imageCanvas.addEventListener('mouseout', () => {
     brushPreviewCtx.clearRect(0, 0, brushPreviewCanvas.width, brushPreviewCanvas.height);
+});
+
+document.getElementById('brush').addEventListener('click', function() {
+    console.log('brush button clicked');
 });
 
 // Update the canvas size after loading the image
