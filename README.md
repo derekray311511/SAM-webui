@@ -7,6 +7,7 @@
 # News
 - Release code
 - Add brush and eraser tool
+- Add save type dropdown menu
 
 # TODO List
 - [x] Save current masks
@@ -20,15 +21,14 @@
 - Multi-View Switch
 - SAM Point Segmentation
 - SAM Box Segmentation
-- SAM Auto Segmentation
-- Undo
-- Clear
-- Save Masks
-- Zoom in / out
+- SAM Auto Segmentation (Inference without prompt)
+- Undo (`ctrl+z`)
+- Clear (`c`)
+- Save Masks (`ctrl+s`)
+- Mouse wheel to zoom in / out
 - Find shortcuts when mouse hovering on buttons!
-- Press ctrl to drag the zoomed image
-- Press alt to change the brush to eraser
-- You can find shortcuts when mouse hovering on buttons!
+- Press `ctrl` to drag the zoomed image
+- Press `alt` to change the brush to eraser
 
 # Install
 The code requires `python>=3.8`, as well as `pytorch>=1.7` and `torchvision>=0.8`. Please follow the instructions [here](https://pytorch.org/get-started/locally/) to install both PyTorch and TorchVision dependencies. Installing both PyTorch and TorchVision with CUDA support is strongly recommended.
