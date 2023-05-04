@@ -260,6 +260,64 @@
             transition: opacity 0.5s;
         }
 
+        #save-type {
+            background-color: #555;
+            color: white;
+            font-size: 14px;
+            border: none;
+            outline: none;
+            border-radius: 8px;
+            padding: 0 24px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            text-indent: 0.01px;
+            text-overflow: "";
+        }
+
+        #save-dropdown::after {
+            content: "▼";
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .options-container {
+            display: none;
+            position: absolute;
+            left: 160px;
+            right: 0;
+            top: 5px;
+            width: 150px;
+            border: 1px solid #f1c40f;
+            background-color: #333;
+            border-radius: 8px;
+            z-index: 2;
+        }
+
+        .option {
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+        }
+
+        .option:hover {
+            background-color: #555;
+            border-radius: 8px;
+        }
+        
+        .option-selected {
+            background-color: #555;
+            border-radius: 8px;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -283,7 +341,15 @@
         <div class="buttons">
             <div class="buttons-group">
                 <button id="load-image" title="shortcut (ctrl+l)">Load Image</button>
-                <button id="save-masks" title="shortcut (ctrl+s)">Save Image</button>
+                <div id="save-dropdown" style="position: relative; display: inline-block;">
+                    <button id="save-masks" title="shortcut (ctrl+s)">Save Image</button>
+                    <div class="selected-option" id="save-type" style="position: absolute; top: 0; left: 120px; width: 100%; height: 100%; opacity: 0; cursor: pointer;">Color Masks</div>
+                    <div class="options-container" id="options-container">
+                        <div class="option option-selected" data-value="colorMasks">Color Masks</div>
+                        <div class="option" data-value="masked_img">Cutout Image</div>
+                        <div class="option" data-value="processed_img">Whole Image</div>
+                    </div>
+                </div>
             </div>
             <div class="buttons-group">
                 <button id="image" class="button  selected-view" title="shortcut (1)">Image view</button>
@@ -327,6 +393,7 @@
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='brush.js') }}"></script>
+    <script src="{{ url_for('static', filename='custom_options.js') }}"></script>
     <script>
         
         let selectedImage = null;
@@ -750,13 +817,15 @@
         });
 
         $("#save-masks").click(function() {
+            // Get the selected save type from the dropdown menu
+            var saveType = optionsContainer.dataset.value;
             // Send the save command to the server.
             var fileName = document.getElementById("image-name").textContent;
             fileName = fileName.split(".")[0];
             $.ajax({
                 url: "/save_image",
                 type: "POST",
-                data: {filename: fileName},
+                data: {filename: fileName, saveType: saveType},
                 success: function (response) {
                     console.log(response);
                     // Show the save notification

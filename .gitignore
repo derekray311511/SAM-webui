@@ -12,3 +12,6 @@ segment_anything/modeling/__pycache__/transformer.cpython-38.pyc
 segment_anything/utils/__pycache__/__init__.cpython-38.pyc
 segment_anything/utils/__pycache__/amg.cpython-38.pyc
 segment_anything/utils/__pycache__/transforms.cpython-38.pyc
+__pycache__
+models
+segment_anything.egg-info

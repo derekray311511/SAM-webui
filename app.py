@@ -131,10 +131,22 @@ class SAM_Web_App:
         
     def save_image(self):
         # Save the colorMasks
+        saveType = request.form.get("saveType")
         filename = request.form.get("filename")
         if filename == "":
             return jsonify({"status": "error", "message": "No image to save"}), 400
-        print(f"Saving: {filename} ...", end="")
+        
+        # Select the appropriate image based on the saveType
+        if saveType == "colorMasks":
+            img_to_save = self.colorMasks
+        elif saveType == "masked_img":
+            img_to_save = self.masked_img
+        elif saveType == "processed_img":
+            img_to_save = self.processed_img
+        else:
+            return jsonify({"status": "error", "message": "Invalid save type"}), 400
+        
+        print(f"Saving {saveType} type image: {filename} ...", end="")
         dirname = os.path.join(self.save_path, filename)
         mkdir_or_exist(dirname)
         # Get the number of existing files in the save_folder
@@ -143,7 +155,7 @@ class SAM_Web_App:
         savename = f"{num_files}.png"
         save_path = os.path.join(dirname, savename)
         try:
-            encoded_img = cv2.imencode(".png", self.colorMasks)[1]
+            encoded_img = cv2.imencode(".png", img_to_save)[1]
             encoded_img.tofile(save_path)
             print("Done!")
             return jsonify({"status": "success", "message": f"Image saved to {save_path}"})
