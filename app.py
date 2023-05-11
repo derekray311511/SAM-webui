@@ -413,7 +413,8 @@ class SAM_Web_App:
                     self.get_colored_masks_image()
                 
         # Apply blur to self.masked_img with self.blurLevel
-        self.masked_img = self.blurMaskedImage(self.origin_image, self.colorMasks, self.blurLevel)
+        if self.blurLevel:
+            self.masked_img = self.blurMaskedImage(self.origin_image, self.colorMasks, self.blurLevel)
 
         if self.curr_view == "masks":
             processed_image = self.masked_img
