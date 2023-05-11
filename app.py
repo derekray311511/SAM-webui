@@ -146,6 +146,16 @@ class SAM_Web_App:
         else:
             return jsonify({"status": "error", "message": "Invalid save type"}), 400
         
+        # Add alpha channel to cutout image (masked image) to save with transparent image
+        if saveType == "masked_img":
+            total_mask = cv2.cvtColor(self.colorMasks, cv2.COLOR_BGR2GRAY)
+            total_mask = total_mask > 0    # Region to preserve
+            alpha_channel = np.zeros(img_to_save.shape[:2], dtype=np.uint8)
+            # Update the alpha channel where the condition is True
+            alpha_channel[total_mask] = 255
+            # Stack the data in the three image channels with the alpha channel
+            img_to_save = cv2.merge((img_to_save, alpha_channel))
+        
         print(f"Saving {saveType} type image: {filename} ...", end="")
         dirname = os.path.join(self.save_path, filename)
         mkdir_or_exist(dirname)
@@ -155,8 +165,9 @@ class SAM_Web_App:
         savename = f"{num_files}.png"
         save_path = os.path.join(dirname, savename)
         try:
-            encoded_img = cv2.imencode(".png", img_to_save)[1]
-            encoded_img.tofile(save_path)
+            # encoded_img = cv2.imencode(".png", img_to_save)[1]
+            # encoded_img.tofile(save_path)
+            cv2.imwrite(save_path, img_to_save)
             print("Done!")
             return jsonify({"status": "success", "message": f"Image saved to {save_path}"})
         except:
