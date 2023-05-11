@@ -224,6 +224,22 @@ $("#image-canvas").on("wheel", function (e) {
     }
 });
 
+brushSizeSlider.addEventListener('wheel', function(event) {
+    var isFocused = (document.activeElement === brushSizeSlider);
+    if (!isFocused) {
+        return;
+    }
+    event.preventDefault();  // Prevents the default scroll behavior
+    if (event.deltaY < 0) {
+        // If the mouse wheel is scrolled up, increase the value of the slider
+        brushSizeSlider.stepUp();
+    } else {
+        // If the mouse wheel is scrolled down, decrease the value of the slider
+        brushSizeSlider.stepDown();
+    }
+    updateBrushSize();
+});
+
 // Add event listeners for the brush tool
 imageCanvas.addEventListener('mousedown', startDrawing);
 imageCanvas.addEventListener('mousemove', draw);

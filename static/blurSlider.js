@@ -1,5 +1,6 @@
+const blurSlider = document.getElementById('blurSlider');
 
-document.getElementById('blurSlider').addEventListener('input', function() {
+function sendBlurLevel() {
     var blurLevel = document.getElementById('blurSlider').value;
     $.ajax({
         url: '/apply_blur',  // Replace with your server's URL
@@ -19,4 +20,24 @@ document.getElementById('blurSlider').addEventListener('input', function() {
             console.log(error);
         }
     });
+}
+
+document.getElementById('blurSlider').addEventListener('input', function() {
+    sendBlurLevel();
+});
+
+blurSlider.addEventListener('wheel', function(event) {
+    var isFocused = (document.activeElement === blurSlider);
+    if (!isFocused) {
+        return;
+    }
+    event.preventDefault();  // Prevents the default scroll behavior
+    if (event.deltaY < 0) {
+        // If the mouse wheel is scrolled up, increase the value of the slider
+        blurSlider.stepUp();
+    } else {
+        // If the mouse wheel is scrolled down, decrease the value of the slider
+        blurSlider.stepDown();
+    }
+    sendBlurLevel();
 });
