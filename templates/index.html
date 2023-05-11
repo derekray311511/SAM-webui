@@ -318,6 +318,17 @@
             border-radius: 8px;
         }
 
+        .label {
+            display: block;
+            text-align: center;
+            color: #fff;
+            background-color: #333;
+            font-size: 14px;
+            padding: 12px 24px;
+            margin: 4px 2px;
+            border-radius: 8px;
+        }
+
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -353,7 +364,7 @@
             </div>
             <div class="buttons-group">
                 <button id="image" class="button  selected-view" title="shortcut (1)">Image view</button>
-                <button id="maskImage" title="shortcut (2)">Masks view</button>
+                <button id="maskImage" title="shortcut (2)">Cutout view</button>
                 <button id="colorMasks" title="shortcut (3)">Color Masks</button>
             </div>
             <div class="buttons-group">
@@ -373,11 +384,19 @@
             </div>
             <!-- Add more buttons as needed -->
         </div>
+
         <input type="file" id="input-image" accept="image/*" style="display:none">
         <div id="image-container" style="position: relative;">
             <img id="preview" src="#" alt="your image">
             <canvas id="image-canvas"></canvas>
             <canvas id="brush-preview-canvas" style="position:absolute; pointer-events:none;"></canvas>
+        </div>
+
+        <div class="buttons">
+            <div class="buttons-group">
+                <span class="label">Cutout blur level</span>
+                <input type="range" id="blurSlider" min="0" max="200" value="0" title="blur level">
+            </div>
         </div>
     </div>
     <div id="zoom-container">
@@ -394,6 +413,7 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='brush.js') }}"></script>
     <script src="{{ url_for('static', filename='custom_options.js') }}"></script>
+    <script src="{{ url_for('static', filename='blurSlider.js') }}"></script>
     <script>
         
         let selectedImage = null;

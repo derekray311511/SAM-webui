@@ -91,6 +91,7 @@ class SAM_Web_App:
         self.colorMasks = None
         self.imgSize = None
         self.imgIsSet = False           # To run self.predictor.set_image() or not
+        self.blurLevel = 0              # Blur the cutout image
 
         self.mode = "p_point"           # p_point / n_point / box
         self.curr_view = "image"
@@ -114,9 +115,36 @@ class SAM_Web_App:
         self.app.route('/set_save_path', methods=['POST'])(self.set_save_path)
         self.app.route('/save_image', methods=['POST'])(self.save_image)
         self.app.route('/send_stroke_data', methods=['POST'])(self.handle_stroke_data)
+        self.app.route('/apply_blur', methods=['POST'])(self.apply_blur)
 
     def home(self):
         return render_template('index.html', default_save_path=self.save_path)
+    
+    def blurMaskedImage(self, image, masks, blurLevel):
+        total_mask = cv2.cvtColor(masks, cv2.COLOR_BGR2GRAY)
+        total_mask = total_mask > 0    # Region to preserve
+        alpha_channel = np.zeros(image.shape[:2], dtype=np.uint8)
+        alpha_channel[total_mask] = 255
+        alpha_channel = cv2.GaussianBlur(alpha_channel, (blurLevel, blurLevel), 0) / 255.
+        alpha_channel = alpha_channel[:, :, np.newaxis]
+        image = (image * alpha_channel).astype(np.uint8)
+        return image
+    
+    def apply_blur(self):
+        self.blurLevel = int(request.form['blurLevel'])
+        self.blurLevel += self.blurLevel % 2 + 1
+        self.masked_img = self.blurMaskedImage(self.origin_image, self.colorMasks, self.blurLevel)
+        
+        if self.curr_view == "masks":
+            processed_image = self.masked_img
+        elif self.curr_view == "colorMasks":
+            processed_image = self.colorMasks
+        else:   # self.curr_view == "image":
+            processed_image = self.processed_img
+
+        _, buffer = cv2.imencode('.jpg', processed_image)
+        img_base64 = base64.b64encode(buffer).decode('utf-8')
+        return jsonify({'image': img_base64})
     
     def set_save_path(self):
         self.save_path = request.form.get("save_path")
@@ -151,7 +179,6 @@ class SAM_Web_App:
             total_mask = cv2.cvtColor(self.colorMasks, cv2.COLOR_BGR2GRAY)
             total_mask = total_mask > 0    # Region to preserve
             alpha_channel = np.zeros(img_to_save.shape[:2], dtype=np.uint8)
-            # Update the alpha channel where the condition is True
             alpha_channel[total_mask] = 255
             # Stack the data in the three image channels with the alpha channel
             img_to_save = cv2.merge((img_to_save, alpha_channel))
@@ -186,6 +213,7 @@ class SAM_Web_App:
         self.masked_img = np.zeros_like(image)
         self.colorMasks = np.zeros_like(image)
         self.imgSize = image.shape
+        print(f"Loaded image with size {self.imgSize}")
 
         # Create image imbedding
         # self.predictor.set_image(image, image_format="RGB")   # Move to first inference
@@ -384,15 +412,15 @@ class SAM_Web_App:
                     self.processed_img, self.masked_img = self.updateMaskImg(self.origin_image, self.masks)
                     self.get_colored_masks_image()
                 
-                if self.curr_view == "masks":
-                    print("view masks")
-                    processed_image = self.masked_img
-                elif self.curr_view == "colorMasks":
-                    print("view color")
-                    processed_image = self.colorMasks
-                else:   # self.curr_view == "image":
-                    print("view image")
-                    processed_image = self.processed_img
+        # Apply blur to self.masked_img with self.blurLevel
+        self.masked_img = self.blurMaskedImage(self.origin_image, self.colorMasks, self.blurLevel)
+
+        if self.curr_view == "masks":
+            processed_image = self.masked_img
+        elif self.curr_view == "colorMasks":
+            processed_image = self.colorMasks
+        else:   # self.curr_view == "image":
+            processed_image = self.processed_img
 
         _, buffer = cv2.imencode('.jpg', processed_image)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
