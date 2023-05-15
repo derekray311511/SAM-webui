@@ -92,6 +92,7 @@ class SAM_Web_App:
         self.imgSize = None
         self.imgIsSet = False           # To run self.predictor.set_image() or not
         self.blurLevel = 0              # Blur the cutout image
+        self.bluredMask = None          # Union mask after blurred
 
         self.mode = "p_point"           # p_point / n_point / box
         self.curr_view = "image"
@@ -128,6 +129,7 @@ class SAM_Web_App:
         alpha_channel = cv2.GaussianBlur(alpha_channel, (blurLevel, blurLevel), 0) / 255.
         alpha_channel = alpha_channel[:, :, np.newaxis]
         image = (image * alpha_channel).astype(np.uint8)
+        self.bluredMask = alpha_channel[:, :, 0]
         return image
     
     def apply_blur(self):
@@ -176,11 +178,8 @@ class SAM_Web_App:
         
         # Add alpha channel to cutout image (masked image) to save with transparent image
         if saveType == "masked_img":
-            total_mask = cv2.cvtColor(self.colorMasks, cv2.COLOR_BGR2GRAY)
-            total_mask = total_mask > 0    # Region to preserve
-            alpha_channel = np.zeros(img_to_save.shape[:2], dtype=np.uint8)
-            alpha_channel[total_mask] = 255
             # Stack the data in the three image channels with the alpha channel
+            alpha_channel = (self.bluredMask * 255.).astype(np.uint8)
             img_to_save = cv2.merge((img_to_save, alpha_channel))
         
         print(f"Saving {saveType} type image: {filename} ...", end="")
