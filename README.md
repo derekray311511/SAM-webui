@@ -8,6 +8,8 @@
 - Release code
 - Add brush and eraser tool
 - Add save type dropdown menu
+- Add mask_kernel in getting mask (The default value is 0, and expansion is not performed)
+- Add White Masks (Using the white mask in stable diffusion inpainting)
 
 # TODO List
 - [x] Save current masks
