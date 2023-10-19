@@ -547,7 +547,7 @@ class SAM_Web_App:
             mask = mask.astype(np.uint8)
             if self.mask_kernel != 0:
                 kernel = np.ones((self.mask_kernel, self.mask_kernel), np.uint8)
-                mask = cv2.dilate(mask, kernel, iterations=1)
+                mask = cv2.dilate(mask, kernel, iterations=3)
             blended = cv2.add(image, mask)
 
         return blended
