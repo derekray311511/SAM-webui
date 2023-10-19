@@ -190,8 +190,6 @@ class SAM_Web_App:
         savename = f"{num_files}.png"
         save_path = os.path.join(dirname, savename)
         try:
-            # encoded_img = cv2.imencode(".png", img_to_save)[1]
-            # encoded_img.tofile(save_path)
             cv2.imwrite(save_path, img_to_save)
             print("Done!")
             return jsonify({"status": "success", "message": f"Image saved to {save_path}"})
@@ -212,9 +210,6 @@ class SAM_Web_App:
         self.colorMasks = np.zeros_like(image)
         self.whiteMasks = np.zeros_like(image)
         self.imgSize = image.shape
-
-        # Create image imbedding
-        # self.predictor.set_image(image, image_format="RGB")   # Move to first inference
 
         # Reset inputs and masks and image ebedding
         self.imgIsSet = False
@@ -286,7 +281,7 @@ class SAM_Web_App:
             if BGRcolor[0] == 255:
                 mask = np.squeeze(stroke_img[:, :, Bpos] == 0)
                 opt = "negative"
-            else:  # np.where(BGRcolor == 255)[0] == Rpos
+            else:
                 mask = np.squeeze(stroke_img[:, :, Rpos] > 0)
                 opt = "positive"
 
@@ -365,7 +360,6 @@ class SAM_Web_App:
                 self.mode = "box"
             elif (id == MODE.INFERENCE):
                 print("INFERENCE")
-                # self.reset_masks()
                 points = np.array(self.points)
                 labels = np.array(self.points_label)
                 boxes = np.array(self.boxes)
@@ -496,7 +490,6 @@ class SAM_Web_App:
 
         # Update masks image to show
         overlayImage, maskedImage = self.updateMaskImg(self.origin_image, self.masks)
-        # overlayImage, maskedImage = self.updateMaskImg(overlayImage, maskedImage, [self.brushMask])
 
         return overlayImage, maskedImage
 
