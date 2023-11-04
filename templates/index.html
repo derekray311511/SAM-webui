@@ -350,6 +350,7 @@
                     <div class="options-container" id="options-container">
                         <div class="option option-selected" data-value="colorMasks">Color Masks</div>
                         <div class="option" data-value="whiteMasks">White Masks</div>
+                        <div class="option" data-value="composeMasks">Compose Masks</div>
                         <div class="option" data-value="masked_img">Cutout Image</div>
                         <div class="option" data-value="processed_img">Whole Image</div>
                     </div>
@@ -360,6 +361,7 @@
                 <button id="maskImage" title="shortcut (2)">Masks view</button>
                 <button id="colorMasks" title="shortcut (3)">Color Masks</button>
                 <button id="whiteMasks" title="shortcut (4)">White Masks</button>
+                <button id="composeMasks" title="shortcut (5)">Compose Masks</button>
             </div>
             <div class="buttons-group">
                 <button id="button4" class="button  selected-view" title="shortcut (4)(p)">P Point mode</button>
@@ -606,6 +608,7 @@
         }
         $("#preview").attr("src", getDefaultDarkImageBase64());
 
+
         function resizeImageContainer(originalWidth, originalHeight) {
             const preview = document.getElementById("preview");
             const imgContainer = document.getElementById("image-container");
@@ -628,6 +631,7 @@
             imgContainer.style.width = newWidth + 'px';
             imgContainer.style.height = newHeight + 'px';
         }
+
         // Call the function whenever the window is resized
         window.addEventListener('resize', () => {
             const originalWidth = $('#preview').data('originalWidth');
@@ -710,6 +714,11 @@
         $("#whiteMasks").click(function() {
             processButtonClick(10);
             toggleSelectedViewButton("whiteMasks");
+            togglePointsAndBoxesVisibility(false);
+        });
+        $("#composeMasks").click(function() {
+            processButtonClick(11);
+            toggleSelectedViewButton("composeMasks");
             togglePointsAndBoxesVisibility(false);
         });
         $("#clear").click(function() {
@@ -829,13 +838,13 @@
             e.stopPropagation();
             // Check if the Enter key was pressed
             if (e.keyCode === 13) {
-                // Trigger the click event for the "Set Mask Kernel" button
+                // Trigger the click event for the "Set Save Path" button
                 $("#set-mask-kernel").trigger("click");
             }
         });
         $("#set-mask-kernel").click(function() {
             const maskKernel = $("#mask-kernel").val();
-            // Send the mask kernel to the server.
+            // Send the save path to the server.
             $.ajax({
                 url: "/set_mask_kernel",
                 type: "POST",

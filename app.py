@@ -35,6 +35,7 @@ class Mode:
         self.UNDO = 8
         self.COLOR_MASKS = 9
         self.WHITE_MASKS = 10
+        self.COMPOSE_MASKS = 11
 
 
 MODE = Mode()
@@ -97,6 +98,7 @@ class SAM_Web_App:
         self.masked_img = None
         self.colorMasks = None
         self.whiteMasks = None
+        self.composeMasks = None
         self.imgSize = None
         self.imgIsSet = False  # To run self.predictor.set_image() or not
 
@@ -151,7 +153,6 @@ class SAM_Web_App:
             print(e)
             return jsonify({"status": "error", "message": "Invalid mask_kernel", "mask_kernel_size": self.mask_kernel}), 400
 
-
     def save_image(self):
         # Save the colorMasks
         saveType = request.form.get("saveType")
@@ -164,6 +165,8 @@ class SAM_Web_App:
             img_to_save = self.colorMasks
         elif saveType == 'whiteMasks':
             img_to_save = self.whiteMasks
+        elif saveType == 'composeMasks':
+            img_to_save = self.composeMasks
         elif saveType == "masked_img":
             img_to_save = self.masked_img
         elif saveType == "processed_img":
@@ -209,7 +212,11 @@ class SAM_Web_App:
         self.masked_img = np.zeros_like(image)
         self.colorMasks = np.zeros_like(image)
         self.whiteMasks = np.zeros_like(image)
+        self.composeMasks = np.zeros_like(image)
         self.imgSize = image.shape
+
+        # Create image imbedding
+        # self.predictor.set_image(image, image_format="RGB")   # Move to first inference
 
         # Reset inputs and masks and image ebedding
         self.imgIsSet = False
@@ -281,7 +288,7 @@ class SAM_Web_App:
             if BGRcolor[0] == 255:
                 mask = np.squeeze(stroke_img[:, :, Bpos] == 0)
                 opt = "negative"
-            else:
+            else:  # np.where(BGRcolor == 255)[0] == Rpos
                 mask = np.squeeze(stroke_img[:, :, Rpos] > 0)
                 opt = "positive"
 
@@ -292,6 +299,8 @@ class SAM_Web_App:
 
         self.get_colored_masks_image()
         self.get_whiteBlack_masks_image()
+        self.get_compose_masks_image()
+        self.get_compose_masks_image()
         self.processed_img, maskedImage = self.updateMaskImg(self.origin_image, self.masks)
         self.masked_img = maskedImage
         self.queue.append("brush")
@@ -305,6 +314,9 @@ class SAM_Web_App:
         elif self.curr_view == "whiteMasks":
             print("view white")
             processed_image = self.whiteMasks
+        elif self.curr_view == "composeMasks":
+            print("view compose")
+            processed_image = self.composeMasks
         else:  # self.curr_view == "image":
             print("view image")
             processed_image = self.processed_img
@@ -345,7 +357,11 @@ class SAM_Web_App:
             elif (id == MODE.WHITE_MASKS):
                 self.curr_view = "whiteMasks"
                 processed_image = self.whiteMasks
+            elif (id == MODE.COMPOSE_MASKS):
+                self.curr_view = "composeMasks"
+                processed_image = self.composeMasks
             elif (id == MODE.CLEAR):
+                print("CLEAR")
                 processed_image = self.origin_image
                 self.processed_img = self.origin_image
                 self.reset_inputs()
@@ -363,14 +379,12 @@ class SAM_Web_App:
                 points = np.array(self.points)
                 labels = np.array(self.points_label)
                 boxes = np.array(self.boxes)
-                print(f"Points shape {points.shape}")
-                print(f"Labels shape {labels.shape}")
-                print(f"Boxes shape {boxes.shape}")
                 prev_masks_len = len(self.masks)
                 processed_image, self.masked_img = self.inference(self.origin_image, points, labels, boxes)
                 curr_masks_len = len(self.masks)
                 self.get_colored_masks_image()
                 self.get_whiteBlack_masks_image()
+                self.get_compose_masks_image()
                 self.processed_img = processed_image
                 self.prev_inputs.append({
                     "points": self.points,
@@ -402,6 +416,7 @@ class SAM_Web_App:
                     self.processed_img, self.masked_img = self.updateMaskImg(self.origin_image, self.masks)
                     self.get_colored_masks_image()
                     self.get_whiteBlack_masks_image()
+                    self.get_compose_masks_image()
 
                     # Load prev inputs
                     prev_inputs = self.prev_inputs.pop()
@@ -413,6 +428,7 @@ class SAM_Web_App:
                     self.processed_img, self.masked_img = self.updateMaskImg(self.origin_image, self.masks)
                     self.get_colored_masks_image()
                     self.get_whiteBlack_masks_image()
+                    self.get_compose_masks_image()
 
                 if self.curr_view == "masks":
                     print("view masks")
@@ -423,6 +439,9 @@ class SAM_Web_App:
                 elif self.curr_view == "whiteMasks":
                     print("view white")
                     processed_image = self.whiteMasks
+                elif self.curr_view == 'composeMasks':
+                    print("view compose")
+                    processed_image = self.composeMasks
                 else:  # self.curr_view == "image":
                     print("view image")
                     processed_image = self.processed_img
@@ -434,19 +453,19 @@ class SAM_Web_App:
     def inference(self, image, points, labels, boxes) -> np.ndarray:
 
         points_len, lables_len, boxes_len = len(points), len(labels), len(boxes)
-        if (len(points) == len(labels) == 0):
+        if len(points) == len(labels) == 0:
             points = labels = None
-        if (len(boxes) == 0):
+        if len(boxes) == 0:
             boxes = None
 
         # Image is set ?
-        if self.imgIsSet == False:
+        if not self.imgIsSet:
             self.predictor.set_image(image, image_format="RGB")
             self.imgIsSet = True
             print("Image set!")
 
         # Auto 
-        if (points_len == boxes_len == 0):
+        if points_len == boxes_len == 0:
             masks = self.autoPredictor.generate(image)
             for mask in masks:
                 self.masks.append({
@@ -455,7 +474,7 @@ class SAM_Web_App:
                 })
 
         # One Object
-        elif ((boxes_len == 1) or (points_len > 0 and boxes_len <= 1)):
+        elif (boxes_len == 1) or (points_len > 0 and boxes_len <= 1):
             masks, scores, logits = self.predictor.predict(
                 point_coords=points,
                 point_labels=labels,
@@ -469,7 +488,7 @@ class SAM_Web_App:
             })
 
         # Multiple Object
-        elif (boxes_len > 1):
+        elif boxes_len > 1:
             boxes = torch.tensor(boxes, device=self.predictor.device)
             transformed_boxes = self.predictor.transform.apply_boxes_torch(boxes, image.shape[:2])
             masks, scores, logits = self.predictor.predict_torch(
@@ -490,12 +509,13 @@ class SAM_Web_App:
 
         # Update masks image to show
         overlayImage, maskedImage = self.updateMaskImg(self.origin_image, self.masks)
+        # overlayImage, maskedImage = self.updateMaskImg(overlayImage, maskedImage, [self.brushMask])
 
         return overlayImage, maskedImage
 
     def updateMaskImg(self, image, masks):
 
-        if (len(masks) == 0 or masks[0] is None):
+        if len(masks) == 0 or masks[0] is None:
             print(masks)
             return image, np.zeros_like(image)
 
@@ -588,6 +608,44 @@ class SAM_Web_App:
         self.whiteMasks = image
         return image
 
+    def get_compose_masks_image(self):
+        masks = self.masks
+        darkImg = np.zeros_like(self.origin_image)
+        image = darkImg.copy()
+
+        np.random.seed(0)
+        if (len(masks) == 0):
+            self.composeMasks = image
+            return image
+        for mask in masks:
+            if mask['opt'] == "negative":
+                image = self.clearMaskWithOriginImg(darkImg, image, mask['mask'])
+            else:
+                # 将mask['mask']透明度减半后叠加到temp_origin_image上
+                temp_origin_image = cv2.cvtColor(self.origin_image, cv2.COLOR_BGR2GRAY)
+                color = np.array([255, 255, 255])  # White color (BGR)
+                h, w = mask['mask'].shape[-2:]
+                mask = mask['mask'].reshape(h, w, 1) * color.reshape(1, 1, -1)
+                mask = mask.astype(np.uint8)
+                mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+                if self.mask_kernel != 0:
+                    kernel = np.ones((self.mask_kernel, self.mask_kernel), np.uint8)
+                    mask = cv2.dilate(mask, kernel, iterations=3)
+
+                choseImage = mask.copy()
+                composeImage = temp_origin_image.copy()
+                alpha = 0.5  # 透明度设置为0.5，可以根据需要调整
+                beta = 1.0 - alpha
+                chosen_image_resized = cv2.resize(choseImage, (composeImage.shape[1], composeImage.shape[0]))
+                cv2.addWeighted(chosen_image_resized, alpha, composeImage, beta, 0, composeImage)
+
+        # 进行mask和composeMask拼接
+        tempWhite = cv2.cvtColor(self.whiteMasks, cv2.COLOR_BGR2GRAY)
+        img_to_save = np.concatenate((tempWhite, composeImage), axis=1)
+        self.composeMasks = img_to_save
+
+        return img_to_save
+
     def clearMaskWithOriginImg(self, originImage, image, mask):
         originImgPart = originImage * np.invert(mask)[:, :, np.newaxis]
         image = image * mask[:, :, np.newaxis]
@@ -604,6 +662,7 @@ class SAM_Web_App:
         self.masked_img = np.zeros_like(self.origin_image)
         self.colorMasks = np.zeros_like(self.origin_image)
         self.whiteMasks = np.zeros_like(self.origin_image)
+        self.composeMasks = np.zeros_like(self.origin_image)
 
     def run(self, host='127.0.0.1', port=8989, debug=True):
         self.app.run(host=host, debug=debug, port=port)
@@ -612,4 +671,4 @@ class SAM_Web_App:
 if __name__ == '__main__':
     args = parser().parse_args()
     app = SAM_Web_App(args)
-    app.run(host='0.0.0.0', port=8989)
+    app.run(host='0.0.0.0', port=args.port)
