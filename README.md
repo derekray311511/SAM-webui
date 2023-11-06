@@ -1,5 +1,6 @@
 # SAM-webui
-<img src="https://github.com/Nomination-NRB/SAM-webui/assets/83486284/933cd2e1-bb8e-4397-8c3c-b0a7e3bed099" width="1000"/>
+
+<img src="https://github.com/Nomination-NRB/SAM-webui/assets/83486284/5c4e8099-9844-4b17-acc7-1e3dbe7c2d56" width="1000"/>
 <img src="https://github.com/Nomination-NRB/SAM-webui/assets/83486284/83946dca-5763-40f7-8e0a-abd42e28891c" width="1000"/>
 <img src="https://user-images.githubusercontent.com/84118285/232520114-e737f6f7-55d5-465c-b7b7-8c15059e8384.gif" width="1000"/>
 <img src="https://user-images.githubusercontent.com/84118285/232520000-6606629d-f375-4fe7-b88f-b08f0eb64321.gif" width="1000"/>
@@ -12,6 +13,7 @@
 - Add save type dropdown menu
 - Add mask_kernel in getting mask (The default value is 0, and expansion is not performed)
 - Add White Masks (Using the white mask in stable diffusion inpainting)
+- Add Compose Masks (The mask splices the corresponding map together to facilitate the corresponding mask and the original image)
 
 # TODO List
 - [x] Save current masks
@@ -43,7 +45,7 @@ We have tested:
 `torchvision 0.15.0`
 
 ```bash
-git clone https://github.com/derekray311511/SAM-webui.git
+git clone https://github.com/Nomination-NRB/SAM-webui.git
 cd SAM-webui; pip install -e .
 ```
 ```bash!
