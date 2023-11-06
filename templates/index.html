@@ -698,21 +698,33 @@
         // Buttons
         $("#image").click(function() {
             processButtonClick(1);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("image");
             togglePointsAndBoxesVisibility(true);
         });
         $("#maskImage").click(function() {
             processButtonClick(2);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("maskImage");
             togglePointsAndBoxesVisibility(false);
         });
         $("#colorMasks").click(function() {
             processButtonClick(9);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("colorMasks");
             togglePointsAndBoxesVisibility(false);
         });
         $("#whiteMasks").click(function() {
             processButtonClick(10);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("whiteMasks");
             togglePointsAndBoxesVisibility(false);
         });
