@@ -718,6 +718,9 @@
         });
         $("#composeMasks").click(function() {
             processButtonClick(11);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth * 2, originalHeight)
             toggleSelectedViewButton("composeMasks");
             togglePointsAndBoxesVisibility(false);
         });
