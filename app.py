@@ -559,16 +559,16 @@ class SAM_Web_App:
             h, w = mask.shape[-2:]
             mask = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
             mask = (mask * (255 * alpha)).astype(np.uint8)
-            blended = cv2.add(image, mask)
         else:
             color = np.array([255, 255, 255])  # White color (BGR)
             h, w = mask.shape[-2:]
             mask = mask.reshape(h, w, 1) * color.reshape(1, 1, -1)
             mask = mask.astype(np.uint8)
-            if self.mask_kernel != 0:
-                kernel = np.ones((self.mask_kernel, self.mask_kernel), np.uint8)
-                mask = cv2.dilate(mask, kernel, iterations=3)
-            blended = cv2.add(image, mask)
+        
+        if self.mask_kernel != 0:
+            kernel = np.ones((self.mask_kernel, self.mask_kernel), np.uint8)
+            mask = cv2.dilate(mask, kernel, iterations=3)
+        blended = cv2.add(image, mask)
 
         return blended
 
