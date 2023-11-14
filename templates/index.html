@@ -148,7 +148,6 @@
         .buttons-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
             padding-left: 2px;
             padding-right: 2px;
             border: 1px solid #857f7f;
@@ -195,7 +194,7 @@
             text-decoration: none;
             display: inline-block;
             font-size: 14px;
-            width: 150px;
+            width: 190px;
             padding: 12px 24px;
             margin: 4px 2px;
             cursor: pointer;
@@ -327,6 +326,10 @@
             <input type="text" id="save-path" value="{{ default_save_path }}">
             <button id="set-save-path">Set Save Path</button>
         </div>
+        <div class="save-path-container">
+            <input type="text" id="mask-kernel" value="0">
+            <button id="set-mask-kernel">Set Mask Kernel Size</button>
+        </div>
         <div class="grid-container" id="folder-selection">
             <button id="prev-image">Previous</button>
             <button id="select-folder">Select Folder</button>
@@ -346,6 +349,8 @@
                     <div class="selected-option" id="save-type" style="position: absolute; top: 0; left: 120px; width: 100%; height: 100%; opacity: 0; cursor: pointer;">Color Masks</div>
                     <div class="options-container" id="options-container">
                         <div class="option option-selected" data-value="colorMasks">Color Masks</div>
+                        <div class="option" data-value="whiteMasks">White Masks</div>
+                        <div class="option" data-value="composeMasks">Compose Masks</div>
                         <div class="option" data-value="masked_img">Cutout Image</div>
                         <div class="option" data-value="processed_img">Whole Image</div>
                     </div>
@@ -355,6 +360,8 @@
                 <button id="image" class="button  selected-view" title="shortcut (1)">Image view</button>
                 <button id="maskImage" title="shortcut (2)">Masks view</button>
                 <button id="colorMasks" title="shortcut (3)">Color Masks</button>
+                <button id="whiteMasks" title="shortcut (4)">White Masks</button>
+                <button id="composeMasks" title="shortcut (5)">Compose Masks</button>
             </div>
             <div class="buttons-group">
                 <button id="button4" class="button  selected-view" title="shortcut (4)(p)">P Point mode</button>
@@ -601,6 +608,7 @@
         }
         $("#preview").attr("src", getDefaultDarkImageBase64());
 
+
         function resizeImageContainer(originalWidth, originalHeight) {
             const preview = document.getElementById("preview");
             const imgContainer = document.getElementById("image-container");
@@ -623,6 +631,7 @@
             imgContainer.style.width = newWidth + 'px';
             imgContainer.style.height = newHeight + 'px';
         }
+
         // Call the function whenever the window is resized
         window.addEventListener('resize', () => {
             const originalWidth = $('#preview').data('originalWidth');
@@ -689,17 +698,42 @@
         // Buttons
         $("#image").click(function() {
             processButtonClick(1);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("image");
             togglePointsAndBoxesVisibility(true);
         });
         $("#maskImage").click(function() {
             processButtonClick(2);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("maskImage");
             togglePointsAndBoxesVisibility(false);
         });
         $("#colorMasks").click(function() {
             processButtonClick(9);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
             toggleSelectedViewButton("colorMasks");
+            togglePointsAndBoxesVisibility(false);
+        });
+        $("#whiteMasks").click(function() {
+            processButtonClick(10);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth, originalHeight)
+            toggleSelectedViewButton("whiteMasks");
+            togglePointsAndBoxesVisibility(false);
+        });
+        $("#composeMasks").click(function() {
+            processButtonClick(11);
+            const originalWidth = $('#preview').data('originalWidth');
+            const originalHeight = $('#preview').data('originalHeight');
+            resizeImageContainer(originalWidth * 2, originalHeight)
+            toggleSelectedViewButton("composeMasks");
             togglePointsAndBoxesVisibility(false);
         });
         $("#clear").click(function() {
@@ -815,7 +849,36 @@
                 },
             });
         });
-
+        $("#mask-kernel").keydown(function(e) {
+            e.stopPropagation();
+            // Check if the Enter key was pressed
+            if (e.keyCode === 13) {
+                // Trigger the click event for the "Set Save Path" button
+                $("#set-mask-kernel").trigger("click");
+            }
+        });
+        $("#set-mask-kernel").click(function() {
+            const maskKernel = $("#mask-kernel").val();
+            // Send the save path to the server.
+            $.ajax({
+                url: "/set_mask_kernel",
+                type: "POST",
+                data: {mask_kernel: maskKernel},
+                success: function(response) {
+                    // Handle the server response here.
+                    console.log(response);
+                    if (response.status === "success") {
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function(error) {
+                    // Handle any errors that occurred during the request.
+                    console.error(error);
+                },
+            });
+        });
         $("#save-masks").click(function() {
             // Get the selected save type from the dropdown menu
             var saveType = optionsContainer.dataset.value;
